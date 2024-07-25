@@ -280,7 +280,7 @@ class HybridEncoder(nn.Module):
 
         return torch.concat([out_w.sin(), out_w.cos(), out_h.sin(), out_h.cos()], dim=1)[None, :, :]
 
-    def forward(self, feats):
+    def forward(self, feats, woNeck=False):
         assert len(feats) == len(self.in_channels)
         proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]
         ''' 
@@ -291,9 +291,10 @@ class HybridEncoder(nn.Module):
             (feat_low) 
         '''
         
-        
         # 2024.07.25 @hslee : without neck
-        return proj_feats
+        backbone_outs = proj_feats   
+        if woNeck:
+            return backbone_outs, None
         
         # HybridEncoder start
         ## 1. AIFI (Attention-based Intra-scale Feature Interaction) (2024.05.23 @hslee)
@@ -325,12 +326,12 @@ class HybridEncoder(nn.Module):
             inner_out = self.fpn_blocks[len(self.in_channels)-1-idx](torch.concat([upsample_feat, feat_low], dim=1))
             inner_outs.insert(0, inner_out)
 
-        outs = [inner_outs[0]]
+        neck_outs = [inner_outs[0]]
         for idx in range(len(self.in_channels) - 1):
-            feat_low = outs[-1]
+            feat_low = neck_outs[-1]
             feat_high = inner_outs[idx + 1]
             downsample_feat = self.downsample_convs[idx](feat_low)
             out = self.pan_blocks[idx](torch.concat([downsample_feat, feat_high], dim=1))
-            outs.append(out)
+            neck_outs.append(out)
 
-        return outs
+        return backbone_outs, neck_outs

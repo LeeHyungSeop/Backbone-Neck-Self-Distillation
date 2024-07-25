@@ -31,6 +31,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     
     ema = kwargs.get('ema', None)
     scaler = kwargs.get('scaler', None)
+    
+    woNeck = kwargs.get('woNeck', False)
+    print(f"(in det_engine.py) woNeck : {woNeck}")
 
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         samples = samples.to(device)
@@ -38,7 +41,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
         if scaler is not None:
             with torch.autocast(device_type=str(device), cache_enabled=True):
-                outputs = model(samples, targets)
+                outputs = model(samples, targets, woNeck=woNeck)
             
             with torch.autocast(device_type=str(device), enabled=False):
                 loss_dict = criterion(outputs, targets)
@@ -55,7 +58,61 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             optimizer.zero_grad()
 
         else:
-            outputs = model(samples, targets)
+            outputs = model(samples, targets, woNeck=woNeck)
+            
+            # 2024.07.25 @hslee : criterion -> src/zoo/rtdetr/rtdetr_criterion.py
+            
+            """
+            # outputs key
+            for key in outputs.keys():
+                print(f"[Output Key] : {key}")
+                '''
+                [Output Key] : pred_logits
+                [Output Key] : pred_boxes
+                [Output Key] : aux_outputs
+                [Output Key] : dn_aux_outputs
+                [Output Key] : dn_meta
+                '''
+            
+            # print(f"[Final Output]")
+            for key, value in outputs.items():
+                
+                if key == 'pred_logits':
+                    print(f"\t{key} : {value.shape}")
+                    # pred_logits : torch.Size([4, 300, 80])
+                    
+                elif key == 'pred_boxes':
+                    print(f"\t{key} : {value.shape}")
+                    # pred_boxes : torch.Size([4, 300, 4])
+                    
+                elif key == 'aux_outputs' or key == 'dn_aux_outputs': # key : list(key, value)
+                    print(f"\t{key} : ")
+                    for i in range(len(value)):
+                        for k, v in value[i].items():
+                            print(f"\t\t{key}[{i}][{k}] : {v.shape}")
+                            # aux_outputs : 
+                                # aux_outputs[0][pred_logits] : torch.Size([4, 300, 80])
+                                # aux_outputs[0][pred_boxes] : torch.Size([4, 300, 4])
+                                # ...
+                                # aux_outputs[5][pred_logits] : torch.Size([4, 300, 80])
+                                # aux_outputs[5][pred_boxes] : torch.Size([4, 300, 4])
+                            # dn_aux_outputs : 
+                                # dn_aux_outputs[0][pred_logits] : torch.Size([4, 200, 80])
+                                # dn_aux_outputs[0][pred_boxes] : torch.Size([4, 200, 4])
+                                # ...
+                                # dn_aux_outputs[5][pred_logits] : torch.Size([4, 200, 80])
+                                # dn_aux_outputs[5][pred_boxes] : torch.Size([4, 200, 4])
+            
+                elif key == 'dn_meta' : # key : (key, value)
+                    print(f"\t{key} : ")
+                    for k, v in value.items():
+                        print(f"\t\t{key}[{k}] : {v}")
+                        # dn_meta : 
+                            # dn_meta[dn_positive_idx] : tuple data type -> (tensor, tensor, tensor, tensor)
+                            # dn_meta[dn_num_group] : scalar
+                            # dn_meta[dn_num_split] : [scalar, scalar]
+            """
+            
             loss_dict = criterion(outputs, targets)
             
             loss = sum(loss_dict.values())
@@ -90,7 +147,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 
 @torch.no_grad()
-def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors, data_loader, base_ds, device, output_dir):
+def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors, data_loader, base_ds, device, output_dir, woNeck=False):
     model.eval()
     criterion.eval()
 
@@ -118,7 +175,7 @@ def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors,
         # with torch.autocast(device_type=str(device)):
         #     outputs = model(samples)
 
-        outputs = model(samples)
+        outputs = model(samples, woNeck=woNeck)
 
         # loss_dict = criterion(outputs, targets)
         # weight_dict = criterion.weight_dict

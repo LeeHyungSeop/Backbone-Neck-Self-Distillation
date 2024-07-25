@@ -42,7 +42,12 @@ class SetCriterion(nn.Module):
         self.num_classes = num_classes
         self.matcher = matcher
         self.weight_dict = weight_dict
-        self.losses = losses 
+        
+        print(f"weight_dict: {weight_dict}")
+        
+        # 2024.07.25 @hslee : to add neck -> backbone knowledge distillation loss
+        # rtdetr_r50vd.yml > SetCriterion > losses: ['vfl', 'boxes', 'nb_kd', ]
+        self.losses = losses  # ['vfl', 'boxes', 'nb_kd', ] 
 
         empty_weight = torch.ones(self.num_classes + 1)
         empty_weight[-1] = eos_coef
@@ -198,6 +203,46 @@ class SetCriterion(nn.Module):
             "loss_dice": dice_loss(src_masks, target_masks, num_boxes),
         }
         return losses
+    
+    # 2024.07.25 @hslee : to add neck -> backbone knowledge distillation loss
+    def loss_nb_kd(self, outputs, targets, indices, num_boxes, log=True):
+        assert 'backbone_outs' in outputs
+        assert 'neck_outs' in outputs
+        
+        backbone_outs = outputs['backbone_outs']
+        neck_outs = outputs['neck_outs']
+        '''
+        for i, feature in enumerate(backbone_outs):
+            print(f"\tbackbone_out[{i}] : {feature.shape}")
+            
+        	# backbone_out[0] : torch.Size([4, 256, 72, 72])
+            # backbone_out[1] : torch.Size([4, 256, 36, 36])
+            # backbone_out[2] : torch.Size([4, 256, 18, 18])
+            
+        for i, feature in enumerate(neck_outs):
+            print(f"\tneck_out[{i}] : {feature.shape}")
+            
+            # neck_out[0] : torch.Size([4, 256, 72, 72])
+            # neck_out[1] : torch.Size([4, 256, 36, 36])
+            # neck_out[2] : torch.Size([4, 256, 18, 18])
+        '''
+        
+        loss = 0
+        num_scales = len(backbone_outs)
+        
+        # knowledge distillation loss
+        
+        ## 1. MSE
+        for i in range(num_scales):
+            loss += F.mse_loss(neck_outs[i], backbone_outs[i])
+        loss /= num_scales
+        
+        # ## 2. KL-Divergence
+        # for i in range(num_scales):
+        #     loss += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
+        # loss /= num_scales
+        
+        return {'loss_nb_kd': loss}
 
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices
@@ -221,6 +266,9 @@ class SetCriterion(nn.Module):
             'bce': self.loss_labels_bce,
             'focal': self.loss_labels_focal,
             'vfl': self.loss_labels_vfl,
+            
+            # 2024.07.25 @hslee : backbone-neck knowledge distillation loss
+            'nb_kd': self.loss_nb_kd, 
         }
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
@@ -233,6 +281,11 @@ class SetCriterion(nn.Module):
                       The expected keys in each dict depends on the losses applied, see each loss' doc
         """
         outputs_without_aux = {k: v for k, v in outputs.items() if 'aux' not in k}
+        
+        # 2024.07.25 @hslee : to add neck -> backbone knowledge distillation loss
+        '''
+        outputs_without_aux = dict_keys(['pred_logits', 'pred_boxes', 'dn_meta'])
+        '''
 
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets)
@@ -244,13 +297,17 @@ class SetCriterion(nn.Module):
             torch.distributed.all_reduce(num_boxes)
         num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
 
+
+        # 2024.07.25 @hslee : to add neck -> backbone knowledge distillation loss
         # Compute all the requested losses
         losses = {}
-        for loss in self.losses:
-            l_dict = self.get_loss(loss, outputs, targets, indices, num_boxes)
+        for loss in self.losses: # ['vfl', 'boxes', 'nb_kd', ]
+            l_dict = self.get_loss(loss, outputs, targets, indices, num_boxes) # loss_vfl, loss_bbox, loss_nb_kd
             l_dict = {k: l_dict[k] * self.weight_dict[k] for k in l_dict if k in self.weight_dict}
             losses.update(l_dict)
+        
 
+        
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if 'aux_outputs' in outputs:
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
@@ -263,7 +320,11 @@ class SetCriterion(nn.Module):
                     if loss == 'labels':
                         # Logging is enabled only for the last layer
                         kwargs = {'log': False}
-
+                        
+                    # 2024.07.25 @hslee : already computed loss_nb_kds
+                    if loss == 'nb_kd':
+                        continue
+                        
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k: l_dict[k] * self.weight_dict[k] for k in l_dict if k in self.weight_dict}
                     l_dict = {k + f'_aux_{i}': v for k, v in l_dict.items()}
@@ -274,7 +335,7 @@ class SetCriterion(nn.Module):
             assert 'dn_meta' in outputs, ''
             indices = self.get_cdn_matched_indices(outputs['dn_meta'], targets)
             num_boxes = num_boxes * outputs['dn_meta']['dn_num_group']
-
+            
             for i, aux_outputs in enumerate(outputs['dn_aux_outputs']):
                 # indices = self.matcher(aux_outputs, targets)
                 for loss in self.losses:
@@ -286,6 +347,10 @@ class SetCriterion(nn.Module):
                         # Logging is enabled only for the last layer
                         kwargs = {'log': False}
 
+                    # 2024.07.25 @hslee : already computed loss_nb_kds
+                    if loss == 'nb_kd':
+                        continue
+                    
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k: l_dict[k] * self.weight_dict[k] for k in l_dict if k in self.weight_dict}
                     l_dict = {k + f'_dn_{i}': v for k, v in l_dict.items()}
@@ -313,8 +378,6 @@ class SetCriterion(nn.Module):
                     torch.zeros(0, dtype=torch.int64,  device=device)))
         
         return dn_match_indices
-
-
 
 
 
