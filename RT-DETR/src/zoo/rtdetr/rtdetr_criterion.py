@@ -231,6 +231,9 @@ class SetCriterion(nn.Module):
         num_scales = len(backbone_outs)
         
         # knowledge distillation loss
+        # backbone_outs : [b, c, 4h, 4w], [b, c, 2h, 2w], [b, c, h, w]
+        # neck_outs :     [b, c, 4h, 4w], [b, c, 2h, 2w], [b, c, h, w]
+        
         
         ## 1. MSE
         for i in range(num_scales):

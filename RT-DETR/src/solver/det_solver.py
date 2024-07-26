@@ -50,10 +50,19 @@ class DetSolver(BaseSolver):
                     dist.save_on_master(self.state_dict(epoch), checkpoint_path)
 
             module = self.ema.module if self.ema else self.model
+            
+            # 2024.07.25 @hslee : without neck model evaluation
+            woNeck = True
+            print(f"woNeck : {woNeck}")
             test_stats, coco_evaluator = evaluate(
-                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir
+                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck
             )
-
+            woNeck = False
+            print(f"woNeck : {woNeck}")
+            test_stats, coco_evaluator = evaluate(
+                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck
+            )
+            
             # TODO 
             for k in test_stats.keys():
                 if k in best_stat:
@@ -84,7 +93,7 @@ class DetSolver(BaseSolver):
                         for name in filenames:
                             torch.save(coco_evaluator.coco_eval["bbox"].eval,
                                     self.output_dir / "eval" / name)
-
+            
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         print('Training time {}'.format(total_time_str))
