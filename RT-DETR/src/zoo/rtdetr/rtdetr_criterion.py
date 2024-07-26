@@ -236,11 +236,16 @@ class SetCriterion(nn.Module):
         
         
         ## 1. MSE
+        # for i in range(num_scales):
+        #     loss += F.mse_loss(neck_outs[i], backbone_outs[i])
+        # loss /= num_scales
+    
+        ## 2. L1 Distance
         for i in range(num_scales):
-            loss += F.mse_loss(neck_outs[i], backbone_outs[i])
+            loss += F.l1_loss(neck_outs[i], backbone_outs[i])
         loss /= num_scales
         
-        # ## 2. KL-Divergence
+        ## 3. KLDiv
         # for i in range(num_scales):
         #     loss += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
         # loss /= num_scales

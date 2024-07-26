@@ -1,0 +1,23 @@
+WARNING:torch.distributed.run:
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+Initialized distributed mode...
+Start training
+Load PResNet50 state_dict
+weight_dict: {'loss_vfl': 1, 'loss_bbox': 5, 'loss_giou': 2, 'loss_nb_kd': 1}
+Initial lr:  [1e-05, 0.0001, 0.0001, 0.0001]
+loading annotations into memory...
+Done (t=11.42s)
+creating index...
+index created!
+loading annotations into memory...
+Done (t=0.37s)
+creating index...
+index created!
+number of params: 42862860
+(in det_engine.py) woNeck : False
+[W reducer.cpp:1300] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+[W reducer.cpp:1300] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+Epoch: [0]  [    0/14786]  eta: 7:55:47  lr: 0.000010  loss: 50.0596 (50.0596)  loss_bbox: 2.0301 (2.0301)  loss_bbox_aux_0: 2.0680 (2.0680)  loss_bbox_aux_1: 2.0855 (2.0855)  loss_bbox_aux_2: 2.0301 (2.0301)  loss_bbox_aux_3: 2.0782 (2.0782)  loss_bbox_aux_4: 2.0602 (2.0602)  loss_bbox_aux_5: 2.0956 (2.0956)  loss_bbox_dn_0: 1.1151 (1.1151)  loss_bbox_dn_1: 1.1151 (1.1151)  loss_bbox_dn_2: 1.1151 (1.1151)  loss_bbox_dn_3: 1.1151 (1.1151)  loss_bbox_dn_4: 1.1151 (1.1151)  loss_bbox_dn_5: 1.1151 (1.1151)  loss_giou: 1.9191 (1.9191)  loss_giou_aux_0: 1.9465 (1.9465)  loss_giou_aux_1: 1.8950 (1.8950)  loss_giou_aux_2: 1.9251 (1.9251)  loss_giou_aux_3: 1.8773 (1.8773)  loss_giou_aux_4: 1.8868 (1.8868)  loss_giou_aux_5: 1.9322 (1.9322)  loss_giou_dn_0: 1.3536 (1.3536)  loss_giou_dn_1: 1.3536 (1.3536)  loss_giou_dn_2: 1.3536 (1.3536)  loss_giou_dn_3: 1.3536 (1.3536)  loss_giou_dn_4: 1.3536 (1.3536)  loss_giou_dn_5: 1.3536 (1.3536)  loss_nb_kd: 1.1332 (1.1332)  loss_vfl: 0.1777 (0.1777)  loss_vfl_aux_0: 0.1970 (0.1970)  loss_vfl_aux_1: 0.1927 (0.1927)  loss_vfl_aux_2: 0.1966 (0.1966)  loss_vfl_aux_3: 0.1727 (0.1727)  loss_vfl_aux_4: 0.2089 (0.2089)  loss_vfl_aux_5: 0.2113 (0.2113)  loss_vfl_dn_0: 0.8353 (0.8353)  loss_vfl_dn_1: 0.7840 (0.7840)  loss_vfl_dn_2: 0.8134 (0.8134)  loss_vfl_dn_3: 0.8255 (0.8255)  loss_vfl_dn_4: 0.8467 (0.8467)  loss_vfl_dn_5: 0.8229 (0.8229)  time: 1.9307  data: 0.6970  max mem: 5005
+Epoch: [0]  [  100/14786]  eta: 1:11:07  lr: 0.000010  loss: 36.3016 (40.8930)  loss_bbox: 0.7455 (1.1754)  loss_bbox_aux_0: 0.7949 (1.2486)  loss_bbox_aux_1: 0.7756 (1.2230)  loss_bbox_aux_2: 0.7611 (1.2034)  loss_bbox_aux_3: 0.7602 (1.1929)  loss_bbox_aux_4: 0.7498 (1.1818)  loss_bbox_aux_5: 0.8436 (1.2958)  loss_bbox_dn_0: 0.7447 (0.8847)  loss_bbox_dn_1: 0.7527 (0.8927)  loss_bbox_dn_2: 0.7637 (0.9009)  loss_bbox_dn_3: 0.7716 (0.9084)  loss_bbox_dn_4: 0.7754 (0.9146)  loss_bbox_dn_5: 0.7707 (0.9200)  loss_giou: 1.3674 (1.4675)  loss_giou_aux_0: 1.3859 (1.5114)  loss_giou_aux_1: 1.3876 (1.4964)  loss_giou_aux_2: 1.3942 (1.4847)  loss_giou_aux_3: 1.3866 (1.4789)  loss_giou_aux_4: 1.3732 (1.4730)  loss_giou_aux_5: 1.3995 (1.5323)  loss_giou_dn_0: 1.3363 (1.3356)  loss_giou_dn_1: 1.3342 (1.3351)  loss_giou_dn_2: 1.3328 (1.3370)  loss_giou_dn_3: 1.3406 (1.3409)  loss_giou_dn_4: 1.3610 (1.3457)  loss_giou_dn_5: 1.3679 (1.3525)  loss_nb_kd: 0.7114 (0.8246)  loss_vfl: 0.6916 (0.6197)  loss_vfl_aux_0: 0.6352 (0.5369)  loss_vfl_aux_1: 0.6449 (0.5589)  loss_vfl_aux_2: 0.6702 (0.5837)  loss_vfl_aux_3: 0.6883 (0.5929)  loss_vfl_aux_4: 0.6871 (0.6126)  loss_vfl_aux_5: 0.6120 (0.5132)  loss_vfl_dn_0: 0.5221 (0.6161)  loss_vfl_dn_1: 0.5159 (0.5987)  loss_vfl_dn_2: 0.5123 (0.6058)  loss_vfl_dn_3: 0.5287 (0.5944)  loss_vfl_dn_4: 0.5373 (0.6103)  loss_vfl_dn_5: 0.5254 (0.5925)  time: 0.2726  data: 0.0085  max mem: 5785
