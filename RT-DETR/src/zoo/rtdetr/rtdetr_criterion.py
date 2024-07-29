@@ -241,14 +241,14 @@ class SetCriterion(nn.Module):
         # loss /= num_scales
     
         ## 2. L1 Distance
-        for i in range(num_scales):
-            loss += F.l1_loss(neck_outs[i], backbone_outs[i])
-        loss /= num_scales
+        # for i in range(num_scales):
+        #     loss += F.l1_loss(neck_outs[i], backbone_outs[i])
+        # loss /= num_scales
         
         ## 3. KLDiv
-        # for i in range(num_scales):
-        #     loss += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
-        # loss /= num_scales
+        for i in range(num_scales):
+            loss += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
+        loss /= num_scales
         
         return {'loss_nb_kd': loss}
 
