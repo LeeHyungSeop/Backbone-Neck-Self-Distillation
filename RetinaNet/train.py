@@ -370,7 +370,7 @@ To run in a multi-gpu environment, use the distributed launcher::
     python -m torch.distributed.launch --nproc_per_node=2 --use_env train.py \
         --world-size 2 --batch-size 8 --lr 0.005 \
         --dataset coco --model retinanet_resnet50_fpn --epochs 26\
-        --data-path=/home/hslee/Desktop/Datasets/coco \
+        --data-path=/media/data/coco2017/ \
         --lr-steps 16 22 --aspect-ratio-group-factor 3 --weights-backbone ResNet50_Weights.IMAGENET1K_V1 \
         2>&1 | tee ./logs/test.txt
 '''
