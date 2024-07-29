@@ -33,7 +33,7 @@ val_dataloader:
 
     
     # ann_file: /media/data/coco/annotations/instances_val2017.json
-    ann_file: /media/data/coco2017/annotations/instan/ces_val2017.json
+    ann_file: /media/data/coco2017/annotations/instances_val2017.json
     # ann_file: /home/hslee/Desktop/Datasets/COCO/annotations/instances_val2017.json
     transforms:
       type: Compose

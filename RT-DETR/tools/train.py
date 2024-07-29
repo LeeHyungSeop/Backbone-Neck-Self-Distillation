@@ -78,4 +78,9 @@ export CUDA_VISIBLE_DEVICES=0
 python tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml --test-only --resume "/home/hslee/Desktop/ADN_BackoneHint/RT-DETR/Hint/output/hint_r50vd_6x_coco_test/best.pth" \
     2>&1 | tee ./logs/test.txt
 
+
+torchrun --nproc_per_node=2 tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
+    --resume "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/output/rtdetr_r50vd_6x_coco_B-N_S-D_KLDiv/checkpoint.pth" \
+    2>&1 | tee -a ./output/rtdetr_r50vd_6x_coco_B-N_S-D_KLDiv/train_log.txt
+
 '''
