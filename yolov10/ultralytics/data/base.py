@@ -98,10 +98,6 @@ class BaseDataset(Dataset):
         self.transforms = self.build_transforms(hyp=hyp)
 
     def get_img_files(self, img_path):
-        
-        # 2024.07.28 @hslee
-        print(f"img_path = {img_path}")
-        
         """Read image files."""
         try:
             f = []  # image files
