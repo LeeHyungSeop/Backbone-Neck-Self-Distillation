@@ -62,7 +62,7 @@ class YOLO(Model):
 class YOLOWorld(Model):
     """YOLO-World object detection model."""
 
-    def __init__(self, model="yolov8s-world.pt", verbose=False) -> None:
+    def __init__(self, model="yolov8s-world.pt", verbose=True) -> None:
         """
         Initializes the YOLOv8-World model with the given pre-trained model file. Supports *.pt and *.yaml formats.
 

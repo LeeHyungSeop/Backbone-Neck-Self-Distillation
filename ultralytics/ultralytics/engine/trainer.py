@@ -535,6 +535,8 @@ class BaseTrainer:
 
     def setup_model(self):
         """Load/create/download model for any task."""
+        # 2024.07.29 @hslee
+        print(f"[ultralytics/engine/trainer.py] setup_model() - self.model: {self.model}")
         if isinstance(self.model, torch.nn.Module):  # if model is loaded beforehand. No setup needed
             return
 

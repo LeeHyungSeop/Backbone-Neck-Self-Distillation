@@ -379,6 +379,10 @@ def yaml_load(file="data.yaml", append_filename=False):
 
         # Add YAML filename to dict and return
         data = yaml.safe_load(s) or {}  # always return a dict (yaml.safe_load() may return None for empty files)
+        
+        # 2024.07.29 @hslee
+        print(f"[ultralytics > ultralytics/utils/__init__.py > yaml_load()] data: {data}")
+        
         if append_filename:
             data["yaml_file"] = str(file)
         return data
