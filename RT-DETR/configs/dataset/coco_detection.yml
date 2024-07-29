@@ -7,8 +7,8 @@ train_dataloader:
   type: DataLoader
   dataset: 
     type: CocoDetection
-    img_folder: /media/data/coco/images/train2017 # ada
-    # img_folder: /media/data/coco2017/train2017  # pascal
+    # img_folder: /media/data/coco/images/train2017 # ada
+    img_folder: /media/data/coco2017/train2017  # pascal
     # img_folder: /home/hslee/Desktop/Datasets/COCO/train2017 # Desktop
 
     ann_file: /media/data/coco/annotations/instances_train2017.json
