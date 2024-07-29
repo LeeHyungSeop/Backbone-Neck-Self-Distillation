@@ -654,6 +654,10 @@ class Model(nn.Module):
                     pass
 
         self.trainer.hub_session = self.session  # attach optional HUB session
+        
+        # 2024.07.28 @hslee
+        print(f"[ultralytics.engine.model.py] train() - self.trainer : {self.trainer}")
+        
         self.trainer.train()
         # Update model and cfg after training
         if RANK in (-1, 0):
