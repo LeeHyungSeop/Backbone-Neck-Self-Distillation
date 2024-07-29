@@ -341,6 +341,10 @@ class BaseTrainer:
             self.plot_idx.extend([base_idx, base_idx + 1, base_idx + 2])
         epoch = self.start_epoch
         self.optimizer.zero_grad()  # zero any resumed gradients to ensure stability on train start
+        
+        # 2024.07.29 @hslee
+        print(f"[ultralytics > ultralytics > engine > 2 trainer.py > BaseTrainer > _do_train] : ")
+            
         while True:
             self.epoch = epoch
             self.run_callbacks("on_train_epoch_start")
@@ -361,6 +365,7 @@ class BaseTrainer:
                 LOGGER.info(self.progress_string())
                 pbar = TQDM(enumerate(self.train_loader), total=nb)
             self.tloss = None
+            
             for i, batch in pbar:
                 self.run_callbacks("on_train_batch_start")
                 # Warmup
