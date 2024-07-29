@@ -1,3 +1,7 @@
 yolo detect train data=coco.yaml model=yolov10n/s/m/b/l/x.yaml epochs=500 batch=256 imgsz=640 device=0,1,2,3,4,5,6,7
 
+# original
 yolo detect train data=coco.yaml model=yolov10l.yaml epochs=500 batch=256 imgsz=640 device=0 2>&1 | tee ./mylogs/test.txt
+
+# HW constraint (batch 256 -> 16)
+yolo detect train data=coco.yaml model=yolov10b.yaml epochs=500 batch=16 imgsz=640 device=0 2>&1 | tee ./mylogs/test.txt
