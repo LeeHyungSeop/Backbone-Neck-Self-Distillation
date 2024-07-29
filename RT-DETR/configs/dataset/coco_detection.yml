@@ -26,7 +26,7 @@ train_dataloader:
 val_dataloader:
   type: DataLoader
   dataset: 
-    type: CocoDetection
+    type: CocoDetection 
     # img_folder: /media/data/coco/images/val2017 # ada
     img_folder: /media/data/coco2017/val2017  # pascal
     # img_folder: /home/hslee/Desktop/Datasets/COCO/val2017 # Desktop
