@@ -725,7 +725,7 @@ class RetinaNet_ResNet50_FPN_V2_Weights(WeightsEnum):
     DEFAULT = COCO_V1
 
 
-@register_model()
+# @register_model()
 @handle_legacy_interface(
     weights=("pretrained", RetinaNet_ResNet50_FPN_Weights.COCO_V1),
     weights_backbone=("pretrained_backbone", ResNet50_Weights.IMAGENET1K_V1),
@@ -828,7 +828,7 @@ def retinanet_resnet50_fpn(
     return model
 
 
-@register_model()
+# @register_model()
 @handle_legacy_interface(
     weights=("pretrained", RetinaNet_ResNet50_FPN_V2_Weights.COCO_V1),
     weights_backbone=("pretrained_backbone", ResNet50_Weights.IMAGENET1K_V1),
