@@ -6,4 +6,4 @@ from .resnet import resnet50, resnet101
 
 from . import detection
 from ._api import get_model, get_model_builder, get_model_weights, get_weight, list_models, Weights, WeightsEnum
-from .retinanet import retinanet_resnet50_fpn
+from .retinanet import my_retinanet_resnet50_fpn

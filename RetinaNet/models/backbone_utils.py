@@ -9,8 +9,8 @@ from .resnet import resnet50, resnet101
 from ._api import _get_enum_from_fn, WeightsEnum
 from ._utils import handle_legacy_interface, IntermediateLayerGetter
 
-# 2024.03.21 @hslee
-class BackboneWithADNFPN(nn.Module):
+
+class BackboneWithFPN(nn.Module):
     """
     Adds a FPN on top of a model.
     Internally, it uses torchvision.models._utils.IntermediateLayerGetter to
@@ -44,6 +44,9 @@ class BackboneWithADNFPN(nn.Module):
         if extra_blocks is None:
             extra_blocks = LastLevelMaxPool()
 
+        # 2024.07.30 @hslee
+        print(f"return_layers: {return_layers}")
+
         self.body = IntermediateLayerGetter(backbone, return_layers=return_layers)
         self.fpn = FeaturePyramidNetwork(
             in_channels_list=in_channels_list,
@@ -52,34 +55,44 @@ class BackboneWithADNFPN(nn.Module):
             norm_layer=norm_layer,
         )
         self.out_channels = out_channels
-        
-        # 2024.03.22 @hslee
-        # print(f"self.body : {self.body}") # IntermediateLayerGetter()
-        # print(f"self.fpn : {self.fpn}") # FeaturePyramidNetwork()
-        # print(f"self.out_channels : {self.out_channels}") # 256
 
-    # 2024.03.22 @hslee
-    def forward(self, x: Tensor, skip=None) -> Dict[str, Tensor]:
-        # print(f"skip: {skip}") 
-        # print(f"x.shape: {x.shape}")  # (bs, 3, 800, 1216)
+    def forward(self, x: Tensor) -> Dict[str, Tensor]:
+        print(f"[backbone_utils.py]")
+        print(f"\timage.shape: {x.shape}")
         
-        # 1. IntermediateLayerGetter() -> backbone's body
-        x = self.body(x, skip=skip)  # self.body() returns OrderedDict type. 'model_out',  'features'
-            # 'model_out' : resnet50's output tensor
-            # 'features' : resnet50's feature maps for lateral connections in FPN
+        x = self.body(x) # IntermediateLayerGetter()
+        print(f"[after IntermediateLayerGetter()]")
+        for key in x.keys():
+            print(f"\tx[{key}].shape : {x[key].shape}")
+        
+        x = self.fpn(x) # FeaturePyramidNetwork()
+        print(f"[after FeaturePyramidNetwork()]")
+        for key in x.keys():
+            print(f"\tout[{key}].shape : {x[key].shape}")
             
-            # Trouble(mat1 and mat2 shapes cannot be multiplied (32768x1 and 2048x1000))
-            # i deleted last FC layer in resnet50.py
-            # because resnet50 for RetinaNet backbone is not needed FC layer(1000 classes classificayion) anymore. 
-            
-        # 2. FeaturePyramidNetwork() -> backbones's fpn
-        x = self.fpn(x['features']) # x: Dict[str, Tensor]
+        '''
+            [backbone_utils.py]
+                image.shape: torch.Size([8, 3, 800, 1216])
+            [after IntermediateLayerGetter()]
+                x[0].shape : torch.Size([8, 512, 100, 152])
+                x[1].shape : torch.Size([8, 1024, 50, 76])
+                x[2].shape : torch.Size([8, 2048, 25, 38])
+            [after FeaturePyramidNetwork()]
+                out[0].shape : torch.Size([8, 256, 100, 152])
+                out[1].shape : torch.Size([8, 256, 50, 76])
+                out[2].shape : torch.Size([8, 256, 25, 38])
+                out[p6].shape : torch.Size([8, 256, 13, 19])
+                out[p7].shape : torch.Size([8, 256, 7, 10])
+
+        '''
+        
         return x
+
 
 @handle_legacy_interface(
     weights=(
         "pretrained",
-        lambda kwargs: _get_enum_from_fn(resnet50.__dict__[kwargs["backbone_name"]])["IMAGENET1K_V1"],
+        lambda kwargs: _get_enum_from_fn(resnet.__dict__[kwargs["backbone_name"]])["IMAGENET1K_V1"],
     ),
 )
 def resnet_fpn_backbone(
@@ -90,9 +103,27 @@ def resnet_fpn_backbone(
     trainable_layers: int = 3,
     returned_layers: Optional[List[int]] = None,
     extra_blocks: Optional[ExtraFPNBlock] = None,
-) -> BackboneWithADNFPN:
+) -> BackboneWithFPN:
     """
     Constructs a specified ResNet backbone with FPN on top. Freezes the specified number of layers in the backbone.
+
+    Examples::
+
+        >>> import torch
+        >>> from torchvision.models import ResNet50_Weights
+        >>> from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
+        >>> backbone = resnet_fpn_backbone(backbone_name='resnet50', weights=ResNet50_Weights.DEFAULT, trainable_layers=3)
+        >>> # get some dummy image
+        >>> x = torch.rand(1,3,64,64)
+        >>> # compute the output
+        >>> output = backbone(x)
+        >>> print([(k, v.shape) for k, v in output.items()])
+        >>> # returns
+        >>>   [('0', torch.Size([1, 256, 16, 16])),
+        >>>    ('1', torch.Size([1, 256, 8, 8])),
+        >>>    ('2', torch.Size([1, 256, 4, 4])),
+        >>>    ('3', torch.Size([1, 256, 2, 2])),
+        >>>    ('pool', torch.Size([1, 256, 1, 1]))]
 
     Args:
         backbone_name (string): resnet architecture. Possible values are 'resnet18', 'resnet34', 'resnet50',
@@ -110,23 +141,18 @@ def resnet_fpn_backbone(
             a new list of feature maps and their corresponding names. By
             default, a ``LastLevelMaxPool`` is used.
     """
-    backbone = resnet50.__dict__[backbone_name](weights=weights, norm_layer=norm_layer)
+    backbone = resnet.__dict__[backbone_name](weights=weights, norm_layer=norm_layer)
     return _resnet50_fpn_extractor(backbone, trainable_layers, returned_layers, extra_blocks)
 
 
 def _resnet50_fpn_extractor(
     backbone: resnet50,
-    trainable_layers: int,                          # 3
-    returned_layers: Optional[List[int]] = None,    # [2, 3, 4]
-    extra_blocks: Optional[ExtraFPNBlock] = None,   # LastLevelP6P7()
-        # P6 is obtained via a 3×3 stride-2 conv on C5, 
-        # P7 is computed by applying ReLU followed by a 3×3 stride-2 conv on P6.
+    trainable_layers: int,
+    returned_layers: Optional[List[int]] = None,
+    extra_blocks: Optional[ExtraFPNBlock] = None,
     norm_layer: Optional[Callable[..., nn.Module]] = None,
-) -> BackboneWithADNFPN:
-    
-    # print(f"extra_blocks: {extra_blocks}") 
+) -> BackboneWithFPN:
 
-    # making sure all `forward` function outputs participate in calculating loss. 
     # select layers that won't be frozen
     if trainable_layers < 0 or trainable_layers > 5:
         raise ValueError(f"Trainable layers should be in the range [0,5], got {trainable_layers}")
@@ -135,7 +161,7 @@ def _resnet50_fpn_extractor(
         layers_to_train.append("bn1")
     for name, parameter in backbone.named_parameters():
         if all([not name.startswith(layer) for layer in layers_to_train]):
-            parameter.requires_grad_(False)    
+            parameter.requires_grad_(False)
 
     if extra_blocks is None:
         extra_blocks = LastLevelMaxPool()
@@ -149,9 +175,7 @@ def _resnet50_fpn_extractor(
     in_channels_stage2 = backbone.inplanes // 8
     in_channels_list = [in_channels_stage2 * 2 ** (i - 1) for i in returned_layers]
     out_channels = 256
-    
-    # 2024.03.21 @hslee
-    return BackboneWithADNFPN(
+    return BackboneWithFPN(
         backbone, return_layers, in_channels_list, out_channels, extra_blocks=extra_blocks, norm_layer=norm_layer
     )
 
@@ -174,11 +198,9 @@ def _validate_trainable_layers(
 
     # by default freeze first blocks
     if trainable_backbone_layers is None:
-        trainable_backbone_layers = default_value # return 3 (default_value) @ 2024.03.21 hslee
+        trainable_backbone_layers = default_value
     if trainable_backbone_layers < 0 or trainable_backbone_layers > max_value:
         raise ValueError(
             f"Trainable backbone layers should be in the range [0,{max_value}], got {trainable_backbone_layers} "
-        )  
-        
-    print(f"trainable_backbone_layers : {trainable_backbone_layers}")
+        )
     return trainable_backbone_layers

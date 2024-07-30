@@ -11,133 +11,553 @@ WARNING:torch.distributed.run:
 *****************************************
 Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
 *****************************************
-<<<<<<< HEAD
 | distributed init (rank 1): env://
 | distributed init (rank 0): env://
-Namespace(data_path='/media/data/coco/images', dataset='coco', model='retinanet_resnet50_fpn', device='cuda', batch_size=8, epochs=26, workers=4, opt='sgd', lr=0.005, momentum=0.9, weight_decay=0.0001, norm_weight_decay=None, lr_scheduler='multisteplr', lr_step_size=8, lr_steps=[16, 22], lr_gamma=0.1, print_freq=20, output_dir='.', resume='', start_epoch=0, aspect_ratio_group_factor=3, rpn_score_thresh=None, trainable_backbone_layers=None, data_augmentation='hflip', sync_bn=False, test_only=False, use_deterministic_algorithms=False, world_size=2, dist_url='env://', weights=None, weights_backbone='ResNet50_Weights.IMAGENET1K_V1', amp=False, use_copypaste=False, backend='pil', use_v2=False, rank=0, gpu=0, distributed=True, dist_backend='nccl')
+Namespace(data_path='/media/data/coco2017', dataset='coco', model='my_retinanet_resnet50_fpn', device='cuda', batch_size=8, epochs=26, workers=4, opt='sgd', lr=0.005, momentum=0.9, weight_decay=0.0001, norm_weight_decay=None, lr_scheduler='multisteplr', lr_step_size=8, lr_steps=[16, 22], lr_gamma=0.1, print_freq=20, output_dir='.', resume='', start_epoch=0, aspect_ratio_group_factor=3, rpn_score_thresh=None, trainable_backbone_layers=None, data_augmentation='hflip', sync_bn=False, test_only=False, use_deterministic_algorithms=False, world_size=2, dist_url='env://', weights=None, weights_backbone='ResNet50_Weights.IMAGENET1K_V1', amp=False, use_copypaste=False, backend='pil', use_v2=False, rank=0, gpu=0, distributed=True, dist_backend='nccl')
 Loading data
-Traceback (most recent call last):
 loading annotations into memory...
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/train.py", line 334, in <module>
-Traceback (most recent call last):
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/train.py", line 334, in <module>
-    main(args)
-    main(args)
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/train.py", line 206, in main
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/train.py", line 206, in main
-    dataset, num_classes = get_dataset(is_train=True, args=args)
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/train.py", line 47, in get_dataset
-    ds = get_coco(
-         ^^^^^^^^^
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/coco_utils.py", line 227, in get_coco
-    dataset = CocoDetection(img_folder, ann_file, transforms=transforms)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/coco_utils.py", line 188, in __init__
-        super().__init__(img_folder, ann_file)
-dataset, num_classes = get_dataset(is_train=True, args=args)
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torchvision/datasets/coco.py", line 36, in __init__
-    self.coco = COCO(annFile)
-                ^^^^^^^^^^^^^
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/pycocotools/coco.py", line 81, in __init__
-                 with open(annotation_file, 'r') as f:
-                    ^^ ^^^^ ^^^ ^^^^^^^^^^^^^^^^^^^^^^
-^^FileNotFoundError^^: [Errno 2] No such file or directory: '/media/data/coco/images/annotations/instances_train2017.json'^
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/train.py", line 47, in get_dataset
-    ds = get_coco(
-         ^^^^^^^^^
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/coco_utils.py", line 227, in get_coco
-    dataset = CocoDetection(img_folder, ann_file, transforms=transforms)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RetinaNet/coco_utils.py", line 188, in __init__
-    super().__init__(img_folder, ann_file)
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torchvision/datasets/coco.py", line 36, in __init__
-    self.coco = COCO(annFile)
-                ^^^^^^^^^^^^^
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/pycocotools/coco.py", line 81, in __init__
-    with open(annotation_file, 'r') as f:
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/media/data/coco/images/annotations/instances_train2017.json'
-ERROR:torch.distributed.elastic.multiprocessing.api:failed (exitcode: 1) local_rank: 0 (pid: 1251977) of binary: /home/hslee/anaconda3/bin/python
-=======
-Traceback (most recent call last):
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/train.py", line 28, in <module>
-    import models.detection
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/__init__.py", line 7, in <module>
-    from . import detection
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/detection/__init__.py", line 1, in <module>
-    from ..retinanet import *
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/retinanet.py", line 728, in <module>
-    @register_model()
-     ^^^^^^^^^^^^^^^^
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torchvision/models/_api.py", line 197, in wrapper
-    raise ValueError(f"An entry is already registered under the name '{key}'.")
-ValueError: An entry is already registered under the name 'retinanet_resnet50_fpn'.
-Traceback (most recent call last):
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/train.py", line 28, in <module>
-    import models.detection
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/__init__.py", line 7, in <module>
-    from . import detection
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/detection/__init__.py", line 1, in <module>
-    from ..retinanet import *
-  File "/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/retinanet.py", line 728, in <module>
-    @register_model()
-     ^^^^^^^^^^^^^^^^
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torchvision/models/_api.py", line 197, in wrapper
-    raise ValueError(f"An entry is already registered under the name '{key}'.")
-ValueError: An entry is already registered under the name 'retinanet_resnet50_fpn'.
-ERROR:torch.distributed.elastic.multiprocessing.api:failed (exitcode: 1) local_rank: 0 (pid: 899730) of binary: /home/hslee/anaconda3/bin/python
->>>>>>> d4bd215 (cleaning)
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launch.py", line 196, in <module>
-    main()
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launch.py", line 192, in main
-    launch(args)
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launch.py", line 177, in launch
-    run(args)
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/run.py", line 785, in run
-    elastic_launch(
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
-    return launch_agent(self._config, self._entrypoint, list(args))
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 250, in launch_agent
-    raise ChildFailedError(
-torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
-============================================================
-train.py FAILED
-------------------------------------------------------------
-Failures:
-[1]:
-<<<<<<< HEAD
-  time      : 2024-07-30_11:09:42
-  host      : ada
-  rank      : 1 (local_rank: 1)
-  exitcode  : 1 (pid: 1251978)
-=======
-  time      : 2024-07-30_11:52:54
-  host      : pascal
-  rank      : 1 (local_rank: 1)
-  exitcode  : 1 (pid: 899731)
->>>>>>> d4bd215 (cleaning)
-  error_file: <N/A>
-  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
-------------------------------------------------------------
-Root Cause (first observed failure):
-[0]:
-<<<<<<< HEAD
-  time      : 2024-07-30_11:09:42
-  host      : ada
-  rank      : 0 (local_rank: 0)
-  exitcode  : 1 (pid: 1251977)
-=======
-  time      : 2024-07-30_11:52:54
-  host      : pascal
-  rank      : 0 (local_rank: 0)
-  exitcode  : 1 (pid: 899730)
->>>>>>> d4bd215 (cleaning)
-  error_file: <N/A>
-  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
-============================================================
+Done (t=8.39s)
+creating index...
+index created!
+loading annotations into memory...
+Done (t=0.21s)
+creating index...
+index created!
+Creating data loaders
+Using [0, 0.5, 0.6299605249474365, 0.7937005259840997, 1.0, 1.259921049894873, 1.5874010519681991, 2.0, inf] as bins for aspect ratio quantization
+Count of instances per bin: [  104   982 24236  2332  8225 74466  5763  1158]
+Creating model
+/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet50_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet50_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/hslee/Backbone-Neck-Self-Distillation/RetinaNet/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet50_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet50_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+return_layers: {'layer2': '0', 'layer3': '1', 'layer4': '2'}
+extra_blocks: LastLevelP6P7(
+  (p6): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (p7): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+)
+backbone: BackboneWithFPN(
+  (body): IntermediateLayerGetter(
+    (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+    (relu): ReLU(inplace=True)
+    (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+    (layer1): Sequential(
+      (0): Bottleneck(
+        (conv1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (1): FrozenBatchNorm2d(256, eps=1e-05)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer2): Sequential(
+      (0): Bottleneck(
+        (conv1): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+          (1): FrozenBatchNorm2d(512, eps=1e-05)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (3): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer3): Sequential(
+      (0): Bottleneck(
+        (conv1): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False)
+          (1): FrozenBatchNorm2d(1024, eps=1e-05)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (3): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (4): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (5): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer4): Sequential(
+      (0): Bottleneck(
+        (conv1): Conv2d(1024, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(1024, 2048, kernel_size=(1, 1), stride=(2, 2), bias=False)
+          (1): FrozenBatchNorm2d(2048, eps=1e-05)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+        (relu): ReLU(inplace=True)
+      )
+    )
+  )
+  (fpn): FeaturePyramidNetwork(
+    (inner_blocks): ModuleList(
+      (0): Conv2dNormActivation(
+        (0): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1))
+      )
+      (1): Conv2dNormActivation(
+        (0): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1))
+      )
+      (2): Conv2dNormActivation(
+        (0): Conv2d(2048, 256, kernel_size=(1, 1), stride=(1, 1))
+      )
+    )
+    (layer_blocks): ModuleList(
+      (0-2): 3 x Conv2dNormActivation(
+        (0): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      )
+    )
+    (extra_blocks): LastLevelP6P7(
+      (p6): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+      (p7): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+    )
+  )
+)
+Start training
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+Epoch: [0]  [   0/7329]  eta: 3:44:21  lr: 0.000010  loss: 2.1847 (2.1847)  bbox_regression: 0.8254 (0.8254)  classification: 1.3593 (1.3593)  time: 1.8367  data: 0.4822  max mem: 10509
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1280])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 160])
+	x[1].shape : torch.Size([8, 1024, 50, 80])
+	x[2].shape : torch.Size([8, 2048, 25, 40])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 160])
+	out[1].shape : torch.Size([8, 256, 50, 80])
+	out[2].shape : torch.Size([8, 256, 25, 40])
+	out[p6].shape : torch.Size([8, 256, 13, 20])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1248])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 156])
+	x[1].shape : torch.Size([8, 1024, 50, 78])
+	x[2].shape : torch.Size([8, 2048, 25, 39])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 156])
+	out[1].shape : torch.Size([8, 256, 50, 78])
+	out[2].shape : torch.Size([8, 256, 25, 39])
+	out[p6].shape : torch.Size([8, 256, 13, 20])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 1216, 800])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 152, 100])
+	x[1].shape : torch.Size([8, 1024, 76, 50])
+	x[2].shape : torch.Size([8, 2048, 38, 25])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 152, 100])
+	out[1].shape : torch.Size([8, 256, 76, 50])
+	out[2].shape : torch.Size([8, 256, 38, 25])
+	out[p6].shape : torch.Size([8, 256, 19, 13])
+	out[p7].shape : torch.Size([8, 256, 10, 7])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1248])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 156])
+	x[1].shape : torch.Size([8, 1024, 50, 78])
+	x[2].shape : torch.Size([8, 2048, 25, 39])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 156])
+	out[1].shape : torch.Size([8, 256, 50, 78])
+	out[2].shape : torch.Size([8, 256, 25, 39])
+	out[p6].shape : torch.Size([8, 256, 13, 20])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1344])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 168])
+	x[1].shape : torch.Size([8, 1024, 50, 84])
+	x[2].shape : torch.Size([8, 2048, 25, 42])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 168])
+	out[1].shape : torch.Size([8, 256, 50, 84])
+	out[2].shape : torch.Size([8, 256, 25, 42])
+	out[p6].shape : torch.Size([8, 256, 13, 21])
+	out[p7].shape : torch.Size([8, 256, 7, 11])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1024])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 128])
+	x[1].shape : torch.Size([8, 1024, 50, 64])
+	x[2].shape : torch.Size([8, 2048, 25, 32])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 128])
+	out[1].shape : torch.Size([8, 256, 50, 64])
+	out[2].shape : torch.Size([8, 256, 25, 32])
+	out[p6].shape : torch.Size([8, 256, 13, 16])
+	out[p7].shape : torch.Size([8, 256, 7, 8])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 1216, 800])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 152, 100])
+	x[1].shape : torch.Size([8, 1024, 76, 50])
+	x[2].shape : torch.Size([8, 2048, 38, 25])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 152, 100])
+	out[1].shape : torch.Size([8, 256, 76, 50])
+	out[2].shape : torch.Size([8, 256, 38, 25])
+	out[p6].shape : torch.Size([8, 256, 19, 13])
+	out[p7].shape : torch.Size([8, 256, 10, 7])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 1216, 800])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 152, 100])
+	x[1].shape : torch.Size([8, 1024, 76, 50])
+	x[2].shape : torch.Size([8, 2048, 38, 25])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 152, 100])
+	out[1].shape : torch.Size([8, 256, 76, 50])
+	out[2].shape : torch.Size([8, 256, 38, 25])
+	out[p6].shape : torch.Size([8, 256, 19, 13])
+	out[p7].shape : torch.Size([8, 256, 10, 7])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 1216, 800])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 152, 100])
+	x[1].shape : torch.Size([8, 1024, 76, 50])
+	x[2].shape : torch.Size([8, 2048, 38, 25])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 152, 100])
+	out[1].shape : torch.Size([8, 256, 76, 50])
+	out[2].shape : torch.Size([8, 256, 38, 25])
+	out[p6].shape : torch.Size([8, 256, 19, 13])
+	out[p7].shape : torch.Size([8, 256, 10, 7])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1248])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 156])
+	x[1].shape : torch.Size([8, 1024, 50, 78])
+	x[2].shape : torch.Size([8, 2048, 25, 39])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 156])
+	out[1].shape : torch.Size([8, 256, 50, 78])
+	out[2].shape : torch.Size([8, 256, 25, 39])
+	out[p6].shape : torch.Size([8, 256, 13, 20])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+Epoch: [0]  [  20/7329]  eta: 1:08:16  lr: 0.000110  loss: 1.9759 (2.0137)  bbox_regression: 0.6921 (0.7183)  classification: 1.2835 (1.2954)  time: 0.4966  data: 0.0135  max mem: 11863
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1024])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 128])
+	x[1].shape : torch.Size([8, 1024, 50, 64])
+	x[2].shape : torch.Size([8, 2048, 25, 32])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 128])
+	out[1].shape : torch.Size([8, 256, 50, 64])
+	out[2].shape : torch.Size([8, 256, 25, 32])
+	out[p6].shape : torch.Size([8, 256, 13, 16])
+	out[p7].shape : torch.Size([8, 256, 7, 8])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 1248, 800])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 156, 100])
+	x[1].shape : torch.Size([8, 1024, 78, 50])
+	x[2].shape : torch.Size([8, 2048, 39, 25])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 156, 100])
+	out[1].shape : torch.Size([8, 256, 78, 50])
+	out[2].shape : torch.Size([8, 256, 39, 25])
+	out[p6].shape : torch.Size([8, 256, 20, 13])
+	out[p7].shape : torch.Size([8, 256, 10, 7])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])
+[backbone_utils.py]
+	image.shape: torch.Size([8, 3, 800, 1216])
+[after IntermediateLayerGetter()]
+	x[0].shape : torch.Size([8, 512, 100, 152])
+	x[1].shape : torch.Size([8, 1024, 50, 76])
+	x[2].shape : torch.Size([8, 2048, 25, 38])
+[after FeaturePyramidNetwork()]
+	out[0].shape : torch.Size([8, 256, 100, 152])
+	out[1].shape : torch.Size([8, 256, 50, 76])
+	out[2].shape : torch.Size([8, 256, 25, 38])
+	out[p6].shape : torch.Size([8, 256, 13, 19])
+	out[p7].shape : torch.Size([8, 256, 7, 10])

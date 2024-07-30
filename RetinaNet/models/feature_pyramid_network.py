@@ -184,11 +184,21 @@ class FeaturePyramidNetwork(nn.Module):
                 They are ordered from the highest resolution first.
         """
                 
+                
         # unpack OrderedDict into two lists for easier handling
         names = list(x.keys()) 
-        # print(f"names : {names}")
         x = list(x.values())
-        # print(f"len(x) : {len(x)}") # 3  (layer 2, 3, 4)
+        
+        # 2024.07.30 @hslee
+        # for idx, x_ in enumerate(x):
+        #     print(f"x[{idx}].shape : {x_.shape}")
+        # '''
+        # x[0].shape : torch.Size([8, 512, 100, 152])
+        # x[1].shape : torch.Size([8, 1024, 50, 76])
+        # x[2].shape : torch.Size([8, 2048, 25, 38])
+        # '''
+            
+        
         
         last_inner = self.get_result_from_inner_blocks(x[-1], -1)
             # TypeError: conv2d() received an invalid combination of arguments - got (collections.OrderedDict, Parameter, Parameter, tuple, tuple, tuple, int), but expected one of:
@@ -198,7 +208,6 @@ class FeaturePyramidNetwork(nn.Module):
         results = []
         results.append(self.get_result_from_layer_blocks(last_inner, -1))
 
-        # 2024.04.21 @hslee : (len(x) - 1) -> (len(x) - 2)
         for idx in range(len(x) - 2, -1, -1):
             # print(f"x[idx].shape : {x[idx].shape}") 
             inner_lateral = self.get_result_from_inner_blocks(x[idx], idx)
@@ -213,6 +222,19 @@ class FeaturePyramidNetwork(nn.Module):
         # make it back an OrderedDict
         out = OrderedDict([(k, v) for k, v in zip(names, results)])
 
+        
+        # 2024.07.30 @hslee
+        # for key in out.keys():
+        #     print(f"out[{key}].shape : {out[key].shape}")
+        # '''
+        # out[0].shape : torch.Size([8, 256, 152, 100])
+        # out[1].shape : torch.Size([8, 256, 76, 50])
+        # out[2].shape : torch.Size([8, 256, 38, 25])
+        # out[p6].shape : torch.Size([8, 256, 19, 13])
+        # out[p7].shape : torch.Size([8, 256, 10, 7])
+        # '''
+        
+        
         return out
 
 

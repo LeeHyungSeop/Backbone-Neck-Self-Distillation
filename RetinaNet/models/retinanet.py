@@ -28,8 +28,8 @@ __all__ = [
     "RetinaNet",
     "RetinaNet_ResNet50_FPN_Weights",
     "RetinaNet_ResNet50_FPN_V2_Weights",
-    "retinanet_resnet50_fpn",
-    "retinanet_resnet50_fpn_v2",
+    "my_retinanet_resnet50_fpn",
+    "my_retinanet_resnet50_fpn_v2",
 ]
 
 
@@ -84,7 +84,7 @@ class RetinaNetHead(nn.Module):
     def forward(self, x):
         # type: (List[Tensor]) -> Dict[str, Tensor]
         return {"cls_logits": self.classification_head(x), "bbox_regression": self.regression_head(x)}
-
+ 
 
 class RetinaNetClassificationHead(nn.Module):
     """
@@ -447,6 +447,7 @@ class RetinaNet(nn.Module):
                 "same for all the levels)"
             )
         self.backbone = backbone
+        print(f"backbone: {backbone}")
 
         if not isinstance(anchor_generator, (AnchorGenerator, type(None))):
             raise TypeError(
@@ -629,11 +630,23 @@ class RetinaNet(nn.Module):
 
         # get the features from the backbone
         features = self.backbone(images.tensors)
+        
         if isinstance(features, torch.Tensor):
             features = OrderedDict([("0", features)])
 
         # TODO: Do we want a list or a dict?
         features = list(features.values())
+        
+        # # 2024.07.30 @hslee
+        # for i, f in enumerate(features):
+        #     print(f"features[{i}]: {f.shape}")
+        # '''
+        # features[0]: torch.Size([8, 256, 100, 168])
+        # features[1]: torch.Size([8, 256, 50, 84])
+        # features[2]: torch.Size([8, 256, 25, 42])
+        # features[3]: torch.Size([8, 256, 13, 21])
+        # features[4]: torch.Size([8, 256, 7, 11])
+        # '''
 
         # compute the retinanet heads outputs using the features
         head_outputs = self.head(features)
@@ -725,12 +738,12 @@ class RetinaNet_ResNet50_FPN_V2_Weights(WeightsEnum):
     DEFAULT = COCO_V1
 
 
-# @register_model()
+@register_model()
 @handle_legacy_interface(
     weights=("pretrained", RetinaNet_ResNet50_FPN_Weights.COCO_V1),
     weights_backbone=("pretrained_backbone", ResNet50_Weights.IMAGENET1K_V1),
 )
-def retinanet_resnet50_fpn(
+def my_retinanet_resnet50_fpn(
     *,
     weights: Optional[RetinaNet_ResNet50_FPN_Weights] = None,
     progress: bool = True,
@@ -815,7 +828,7 @@ def retinanet_resnet50_fpn(
 
     backbone = resnet50(weights=weights_backbone, progress=progress, norm_layer=norm_layer)
     # skip P2 because it generates too many anchors (according to their paper)
-    backbone = _resnet_fpn_extractor(
+    backbone = _resnet50_fpn_extractor(
         backbone, trainable_backbone_layers, returned_layers=[2, 3, 4], extra_blocks=LastLevelP6P7(256, 256)
     )
     model = RetinaNet(backbone, num_classes, **kwargs)
@@ -828,12 +841,12 @@ def retinanet_resnet50_fpn(
     return model
 
 
-# @register_model()
+@register_model()
 @handle_legacy_interface(
     weights=("pretrained", RetinaNet_ResNet50_FPN_V2_Weights.COCO_V1),
     weights_backbone=("pretrained_backbone", ResNet50_Weights.IMAGENET1K_V1),
 )
-def retinanet_resnet50_fpn_v2(
+def my_retinanet_resnet50_fpn_v2(
     *,
     weights: Optional[RetinaNet_ResNet50_FPN_V2_Weights] = None,
     progress: bool = True,
