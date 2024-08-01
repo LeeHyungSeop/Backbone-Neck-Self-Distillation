@@ -25,7 +25,7 @@ class RTDETR(nn.Module):
         self.encoder = encoder
         self.multi_scale = multi_scale
         
-    def forward(self, x, targets=None, woNeck=False):
+    def forward(self, x, targets=None, wNeck=False):
         if self.multi_scale and self.training:
             sz = np.random.choice(self.multi_scale)
             x = F.interpolate(x, size=[sz, sz])
@@ -40,7 +40,7 @@ class RTDETR(nn.Module):
             x[2] : torch.Size([4, 2048,  h,  w])
         '''   
         
-        backbone_outs, neck_outs = self.encoder(x, woNeck=woNeck)
+        backbone_outs, neck_outs = self.encoder(x, wNeck=wNeck)
         '''
         for i in range(len(x)):
             print(f"\tx[{i}] : {x[i].shape}")
@@ -56,10 +56,10 @@ class RTDETR(nn.Module):
                     fusion_F5-S4-S3-S4-F5.shape = [b, 256,  h,  w]
         ''' 
         
-        if woNeck :
-            x = backbone_outs
-        else : 
+        if wNeck :
             x = neck_outs
+        else : 
+            x = backbone_outs
             
         x = self.decoder(x, targets)
         '''

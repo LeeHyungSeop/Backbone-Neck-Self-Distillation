@@ -97,7 +97,10 @@ def warp_model(model, find_unused_parameters=False, sync_bn=False,):
     if is_dist_available_and_initialized():
         rank = get_rank()
         model = nn.SyncBatchNorm.convert_sync_batchnorm(model) if sync_bn else model 
-        model = DDP(model, device_ids=[rank], output_device=rank, find_unused_parameters=find_unused_parameters)
+        
+        # 2024.07.31 @hslee : find_unused_parameters=False -> two forward passes
+        # print(f"[dist.py]")
+        model = DDP(model, device_ids=[rank], output_device=rank, find_unused_parameters=False)
     return model
 
 

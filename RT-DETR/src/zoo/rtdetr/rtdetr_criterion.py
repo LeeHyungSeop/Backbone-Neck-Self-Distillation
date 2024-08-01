@@ -206,8 +206,8 @@ class SetCriterion(nn.Module):
     
     # 2024.07.25 @hslee : to add neck -> backbone knowledge distillation loss
     def loss_nb_kd(self, outputs, targets, indices, num_boxes, log=True):
-        assert 'backbone_outs' in outputs
-        assert 'neck_outs' in outputs
+        if 'backbone_outs' not in outputs or 'neck_outs' not in outputs:
+            return {'loss_nb_kd': torch.tensor(0.)}
         
         backbone_outs = outputs['backbone_outs']
         neck_outs = outputs['neck_outs']
@@ -275,8 +275,8 @@ class SetCriterion(nn.Module):
             'focal': self.loss_labels_focal,
             'vfl': self.loss_labels_vfl,
             
-            # 2024.07.25 @hslee : backbone-neck knowledge distillation loss
-            'nb_kd': self.loss_nb_kd, 
+            # # 2024.07.25 @hslee : backbone-neck knowledge distillation loss
+            # 'nb_kd': self.loss_nb_kd, 
         }
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
@@ -329,9 +329,9 @@ class SetCriterion(nn.Module):
                         # Logging is enabled only for the last layer
                         kwargs = {'log': False}
                         
-                    # 2024.07.25 @hslee : already computed loss_nb_kds
-                    if loss == 'nb_kd':
-                        continue
+                    # # 2024.07.25 @hslee : already computed loss_nb_kds
+                    # if loss == 'nb_kd':
+                    #     continue
                         
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k: l_dict[k] * self.weight_dict[k] for k in l_dict if k in self.weight_dict}
@@ -355,9 +355,9 @@ class SetCriterion(nn.Module):
                         # Logging is enabled only for the last layer
                         kwargs = {'log': False}
 
-                    # 2024.07.25 @hslee : already computed loss_nb_kds
-                    if loss == 'nb_kd':
-                        continue
+                    # # 2024.07.25 @hslee : already computed loss_nb_kds
+                    # if loss == 'nb_kd':
+                    #     continue
                     
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k: l_dict[k] * self.weight_dict[k] for k in l_dict if k in self.weight_dict}

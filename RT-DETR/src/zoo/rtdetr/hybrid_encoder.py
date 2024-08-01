@@ -280,7 +280,7 @@ class HybridEncoder(nn.Module):
 
         return torch.concat([out_w.sin(), out_w.cos(), out_h.sin(), out_h.cos()], dim=1)[None, :, :]
 
-    def forward(self, feats, woNeck=False):
+    def forward(self, feats, wNeck=False):
         assert len(feats) == len(self.in_channels)
         proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]
         ''' 
@@ -293,7 +293,9 @@ class HybridEncoder(nn.Module):
         
         # 2024.07.25 @hslee : without neck
         backbone_outs = proj_feats   
-        if woNeck:
+        if wNeck:
+            pass
+        else :
             return backbone_outs, None
         
         # HybridEncoder start

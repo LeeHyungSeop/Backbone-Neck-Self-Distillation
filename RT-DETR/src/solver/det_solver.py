@@ -37,7 +37,7 @@ class DetSolver(BaseSolver):
             # 2024.07.25 @hslee : original model training (woNeck = False)
             train_stats = train_one_epoch(
                 self.model, self.criterion, self.train_dataloader, self.optimizer, self.device, epoch,
-                args.clip_max_norm, print_freq=args.log_step, ema=self.ema, scaler=self.scaler, woNeck=False)
+                args.clip_max_norm, print_freq=args.log_step, ema=self.ema, scaler=self.scaler)
 
             self.lr_scheduler.step()
             
@@ -52,15 +52,15 @@ class DetSolver(BaseSolver):
             module = self.ema.module if self.ema else self.model
             
             # 2024.07.25 @hslee : without neck model evaluation
-            woNeck = True
-            print(f"woNeck : {woNeck}")
+            wNeck = True
+            print(f"wNeck : {wNeck}")
             test_stats, coco_evaluator = evaluate(
-                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck
+                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, wNeck=wNeck
             )
-            woNeck = False
-            print(f"woNeck : {woNeck}")
+            wNeck = False
+            print(f"wNeck : {wNeck}")
             test_stats, coco_evaluator = evaluate(
-                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck
+                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, wNeck=wNeck
             )
             
             # TODO 

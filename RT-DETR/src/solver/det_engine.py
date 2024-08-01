@@ -13,6 +13,7 @@ from typing import Iterable
 
 import torch
 import torch.amp 
+import torch.nn.functional as F 
 
 from src.data import CocoEvaluator
 from src.misc import (MetricLogger, SmoothedValue, reduce_dict)
@@ -31,9 +32,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     
     ema = kwargs.get('ema', None)
     scaler = kwargs.get('scaler', None)
-    
-    woNeck = kwargs.get('woNeck', False)
-    print(f"(in det_engine.py) woNeck : {woNeck}")
 
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
         samples = samples.to(device)
@@ -41,7 +39,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
         if scaler is not None:
             with torch.autocast(device_type=str(device), cache_enabled=True):
-                outputs = model(samples, targets, woNeck=woNeck)
+                outputs = model(samples, targets)
             
             with torch.autocast(device_type=str(device), enabled=False):
                 loss_dict = criterion(outputs, targets)
@@ -58,14 +56,25 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             optimizer.zero_grad()
 
         else:
-            outputs = model(samples, targets, woNeck=woNeck)
+            
+            wNeck = True
+            outputs_w_neck = model(samples, targets, wNeck=wNeck)
+            neck_outs = outputs_w_neck.pop('neck_outs')
+            backbone_outs = outputs_w_neck.pop('backbone_outs')
+            # for i, out in enumerate(neck_outs):
+            #     print(f"\tneck_out[{i}] : {out.shape}")
+            # for i, out in enumerate(backbone_outs):
+            #     print(f"\tbackbone_out[{i}] : {out.shape}")
+            
+            wNeck = False
+            outputs_wo_neck = model(samples, targets, wNeck=wNeck)
+            
+            
             
             # 2024.07.25 @hslee : criterion -> src/zoo/rtdetr/rtdetr_criterion.py
             
             """
             # outputs key
-            for key in outputs.keys():
-                print(f"[Output Key] : {key}")
                 '''
                 [Output Key] : pred_logits
                 [Output Key] : pred_boxes
@@ -113,10 +122,22 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                             # dn_meta[dn_num_split] : [scalar, scalar]
             """
             
-            loss_dict = criterion(outputs, targets)
+            loss_w_neck_dict = criterion(outputs_w_neck, targets)
+            loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
             
-            loss = sum(loss_dict.values())
+            loss_w_neck = sum(loss_w_neck_dict.values())
+            loss_wo_neck = sum(loss_wo_neck_dict.values())
+            
+            
+            ## 3. KLDiv
+            loss_nb_kd = 0
+            for i in range(3):
+                loss_nb_kd += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
+            loss_nb_kd /= 3
+            
             optimizer.zero_grad()
+            alpha = 0.5
+            loss = alpha * loss_w_neck + (1 - alpha) * loss_wo_neck + loss_nb_kd
             loss.backward()
             
             if max_norm > 0:
@@ -128,15 +149,27 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         if ema is not None:
             ema.update(model)
 
-        loss_dict_reduced = reduce_dict(loss_dict)
-        loss_value = sum(loss_dict_reduced.values())
+        loss_dict_w_neck_reduced = reduce_dict(loss_w_neck_dict)
+        loss_dict_wo_neck_reduced = reduce_dict(loss_wo_neck_dict)
+        
+        loss_value_w_neck = sum(loss_dict_w_neck_reduced.values())
+        loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
+        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck
 
-        if not math.isfinite(loss_value):
-            print("Loss is {}, stopping training".format(loss_value))
-            print(loss_dict_reduced)
+        if not math.isfinite(loss_value_w_neck):
+            print("Loss is {}, stopping training".format(loss_value_w_neck))
+            print(loss_dict_w_neck_reduced)
+            sys.exit(1)
+        if not math.isfinite(loss_value_wo_neck):
+            print("Loss is {}, stopping training".format(loss_value_wo_neck))
+            print(loss_dict_wo_neck_reduced)
             sys.exit(1)
 
-        metric_logger.update(loss=loss_value, **loss_dict_reduced)
+        
+        metric_logger.update(loss=loss_value)
+        metric_logger.update(KD=loss_nb_kd)
+        metric_logger.update(loss_w_neck=loss_value_w_neck, **loss_dict_w_neck_reduced)
+        metric_logger.update(loss_wo_neck=loss_value_wo_neck, **loss_dict_wo_neck_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
     # gather the stats from all processes
@@ -147,7 +180,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 
 @torch.no_grad()
-def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors, data_loader, base_ds, device, output_dir, woNeck=False):
+def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors, data_loader, base_ds, device, output_dir, wNeck):
     model.eval()
     criterion.eval()
 
@@ -175,7 +208,7 @@ def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors,
         # with torch.autocast(device_type=str(device)):
         #     outputs = model(samples)
 
-        outputs = model(samples, woNeck=woNeck)
+        outputs = model(samples, wNeck=wNeck)
 
         # loss_dict = criterion(outputs, targets)
         # weight_dict = criterion.weight_dict
