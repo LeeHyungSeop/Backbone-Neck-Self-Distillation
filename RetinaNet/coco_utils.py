@@ -206,7 +206,10 @@ def get_coco(root, image_set, transforms, mode="instances", use_v2=False, with_m
     }
 
     img_folder, ann_file = PATHS[image_set]
-    img_folder = os.path.join(root, img_folder)
+    print("root: ", root) # /media/data/coco/
+    print("img_folder: ", img_folder) # train2017
+    # img_folder = os.path.join(root, img_folder)
+    img_folder = os.path.join(root, "images", img_folder)
     ann_file = os.path.join(root, ann_file)
 
     if use_v2:

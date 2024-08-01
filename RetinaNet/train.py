@@ -368,9 +368,9 @@ To run in a multi-gpu environment, use the distributed launcher::
         
     # ada, pascal
     python -m torch.distributed.launch --nproc_per_node=2 --use_env train.py \
-        --world-size 2 --batch-size 8 --lr 0.005 \
+        --world-size 2 --batch-size 8 --worker 8 --lr 0.01 \
         --dataset coco --model my_retinanet_resnet50_fpn --epochs 26\
-        --data-path=/media/data/coco2017 \
+        --data-path=/media/data/coco/ \
         --lr-steps 16 22 --aspect-ratio-group-factor 3 --weights-backbone ResNet50_Weights.IMAGENET1K_V1 \
-        2>&1 | tee ./logs/baseline.txt
+        2>&1 | tee ./logs/baseline_lr001.txt
 '''
