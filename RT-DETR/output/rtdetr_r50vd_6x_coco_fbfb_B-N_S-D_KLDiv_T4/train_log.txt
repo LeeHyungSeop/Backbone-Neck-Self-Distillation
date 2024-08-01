@@ -1,0 +1,103 @@
+WARNING:torch.distributed.run:
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+Initialized distributed mode...
+Start training
+Load PResNet50 state_dict
+weight_dict: {'loss_vfl': 1, 'loss_bbox': 5, 'loss_giou': 2}
+Initial lr:  [1e-05, 0.0001, 0.0001, 0.0001]
+loading annotations into memory...
+Done (t=8.07s)
+creating index...
+index created!
+loading annotations into memory...
+Done (t=0.20s)
+creating index...
+index created!
+number of params: 42862860
+here
+Epoch: [0]  [    0/14786]  eta: 6:09:07  lr: 0.000010  loss: 3609.3882 (3609.3882)  KD: 3563.0935 (3563.0935)  loss_w_neck: 46.2795 (46.2795)  loss_bbox: 1.7376 (1.7711)  loss_bbox_aux_0: 1.7650 (1.7800)  loss_bbox_aux_1: 1.7733 (1.7853)  loss_bbox_aux_2: 1.7460 (1.7921)  loss_bbox_aux_3: 1.7284 (1.7587)  loss_bbox_aux_4: 1.7578 (1.7672)  loss_bbox_aux_5: 1.7509 (1.8006)  loss_bbox_dn_0: 1.0025 (1.0138)  loss_bbox_dn_1: 1.0025 (1.0138)  loss_bbox_dn_2: 1.0025 (1.0138)  loss_bbox_dn_3: 1.0025 (1.0138)  loss_bbox_dn_4: 1.0025 (1.0138)  loss_bbox_dn_5: 1.0025 (1.0138)  loss_giou: 1.6163 (1.6668)  loss_giou_aux_0: 1.6142 (1.6725)  loss_giou_aux_1: 1.6260 (1.6762)  loss_giou_aux_2: 1.5972 (1.6686)  loss_giou_aux_3: 1.6154 (1.6667)  loss_giou_aux_4: 1.6209 (1.6754)  loss_giou_aux_5: 1.6568 (1.6848)  loss_giou_dn_0: 1.2862 (1.2867)  loss_giou_dn_1: 1.2862 (1.2867)  loss_giou_dn_2: 1.2862 (1.2867)  loss_giou_dn_3: 1.2862 (1.2867)  loss_giou_dn_4: 1.2862 (1.2867)  loss_giou_dn_5: 1.2862 (1.2867)  loss_vfl: 0.3815 (0.3987)  loss_vfl_aux_0: 0.3273 (0.3451)  loss_vfl_aux_1: 0.3696 (0.3746)  loss_vfl_aux_2: 0.3729 (0.3775)  loss_vfl_aux_3: 0.3516 (0.3566)  loss_vfl_aux_4: 0.3468 (0.3809)  loss_vfl_aux_5: 0.3775 (0.3875)  loss_vfl_dn_0: 0.9440 (0.9578)  loss_vfl_dn_1: 0.9014 (0.9041)  loss_vfl_dn_2: 0.9459 (0.9629)  loss_vfl_dn_3: 0.9177 (0.9249)  loss_vfl_dn_4: 0.9134 (0.9617)  loss_vfl_dn_5: 0.9930 (0.9936)  loss_wo_neck: 46.3099 (46.3099)  time: 1.4979  data: 0.4502  max mem: 6712
+Traceback (most recent call last):
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/train.py", line 50, in <module>
+    main(args)
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/train.py", line 36, in main
+    solver.fit()
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/../src/solver/det_solver.py", line 40, in fit
+    train_stats = train_one_epoch(
+                  ^^^^^^^^^^^^^^^^
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/../src/solver/det_engine.py", line 67, in train_one_epoch
+    outputs_w_neck = model(samples, targets, wNeck=wNeck)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1139, in forward
+    if torch.is_grad_enabled() and self.reducer._rebuild_buckets():
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one. This error indicates that your module has parameters that were not used in producing loss. You can enable unused parameter detection by passing the keyword argument `find_unused_parameters=True` to `torch.nn.parallel.DistributedDataParallel`, and by 
+making sure all `forward` function outputs participate in calculating loss. 
+If you already have done the above, then the distributed data parallel module wasn't able to locate the output tensors in the return value of your module's `forward` function. Please include the loss function and the structure of the return value of `forward` of your module when reporting this issue (e.g. list, dict, iterable).
+Parameters which did not receive grad for rank 1: encoder.pan_blocks.1.bottlenecks.2.conv2.norm.bias, encoder.pan_blocks.1.bottlenecks.2.conv2.norm.weight, encoder.pan_blocks.1.bottlenecks.2.conv2.conv.weight, encoder.pan_blocks.1.bottlenecks.2.conv1.norm.bias, encoder.pan_blocks.1.bottlenecks.2.conv1.norm.weight, encoder.pan_blocks.1.bottlenecks.2.conv1.conv.weight, encoder.pan_blocks.1.bottlenecks.1.conv2.norm.bias, encoder.pan_blocks.1.bottlenecks.1.conv2.norm.weight, encoder.pan_blocks.1.bottlenecks.1.conv2.conv.weight, encoder.pan_blocks.1.bottlenecks.1.conv1.norm.bias, encoder.pan_blocks.1.bottlenecks.1.conv1.norm.weight, encoder.pan_blocks.1.bottlenecks.1.conv1.conv.weight, encoder.pan_blocks.1.bottlenecks.0.conv2.norm.bias, encoder.pan_blocks.1.bottlenecks.0.conv2.norm.weight, encoder.pan_blocks.1.bottlenecks.0.conv2.conv.weight, encoder.pan_blocks.1.bottlenecks.0.conv1.norm.bias, encoder.pan_blocks.1.bottlenecks.0.conv1.norm.weight, encoder.pan_blocks.1.bottlenecks.0.conv1.conv.weight, encoder.pan_blocks.1.conv2.norm.bias, encoder.pan_blocks.1.conv2.norm.weight, encoder.pan_blocks.1.conv2.conv.weight, encoder.pan_blocks.1.conv1.norm.bias, encoder.pan_blocks.1.conv1.norm.weight, encoder.pan_blocks.1.conv1.conv.weight, encoder.pan_blocks.0.bottlenecks.2.conv2.norm.bias, encoder.pan_blocks.0.bottlenecks.2.conv2.norm.weight, encoder.pan_blocks.0.bottlenecks.2.conv2.conv.weight, encoder.pan_blocks.0.bottlenecks.2.conv1.norm.bias, encoder.pan_blocks.0.bottlenecks.2.conv1.norm.weight, encoder.pan_blocks.0.bottlenecks.2.conv1.conv.weight, encoder.pan_blocks.0.bottlenecks.1.conv2.norm.bias, encoder.pan_blocks.0.bottlenecks.1.conv2.norm.weight, encoder.pan_blocks.0.bottlenecks.1.conv2.conv.weight, encoder.pan_blocks.0.bottlenecks.1.conv1.norm.bias, encoder.pan_blocks.0.bottlenecks.1.conv1.norm.weight, encoder.pan_blocks.0.bottlenecks.1.conv1.conv.weight, encoder.pan_blocks.0.bottlenecks.0.conv2.norm.bias, encoder.pan_blocks.0.bottlenecks.0.conv2.norm.weight, encoder.pan_blocks.0.bottlenecks.0.conv2.conv.weight, encoder.pan_blocks.0.bottlenecks.0.conv1.norm.bias, encoder.pan_blocks.0.bottlenecks.0.conv1.norm.weight, encoder.pan_blocks.0.bottlenecks.0.conv1.conv.weight, encoder.pan_blocks.0.conv2.norm.bias, encoder.pan_blocks.0.conv2.norm.weight, encoder.pan_blocks.0.conv2.conv.weight, encoder.pan_blocks.0.conv1.norm.bias, encoder.pan_blocks.0.conv1.norm.weight, encoder.pan_blocks.0.conv1.conv.weight, encoder.downsample_convs.1.norm.bias, encoder.downsample_convs.1.norm.weight, encoder.downsample_convs.1.conv.weight, encoder.downsample_convs.0.norm.bias, encoder.downsample_convs.0.norm.weight, encoder.downsample_convs.0.conv.weight, encoder.fpn_blocks.1.bottlenecks.2.conv2.norm.bias, encoder.fpn_blocks.1.bottlenecks.2.conv2.norm.weight, encoder.fpn_blocks.1.bottlenecks.2.conv2.conv.weight, encoder.fpn_blocks.1.bottlenecks.2.conv1.norm.bias, encoder.fpn_blocks.1.bottlenecks.2.conv1.norm.weight, encoder.fpn_blocks.1.bottlenecks.2.conv1.conv.weight, encoder.fpn_blocks.1.bottlenecks.1.conv2.norm.bias, encoder.fpn_blocks.1.bottlenecks.1.conv2.norm.weight, encoder.fpn_blocks.1.bottlenecks.1.conv2.conv.weight, encoder.fpn_blocks.1.bottlenecks.1.conv1.norm.bias, encoder.fpn_blocks.1.bottlenecks.1.conv1.norm.weight, encoder.fpn_blocks.1.bottlenecks.1.conv1.conv.weight, encoder.fpn_blocks.1.bottlenecks.0.conv2.norm.bias, encoder.fpn_blocks.1.bottlenecks.0.conv2.norm.weight, encoder.fpn_blocks.1.bottlenecks.0.conv2.conv.weight, encoder.fpn_blocks.1.bottlenecks.0.conv1.norm.bias, encoder.fpn_blocks.1.bottlenecks.0.conv1.norm.weight, encoder.fpn_blocks.1.bottlenecks.0.conv1.conv.weight, encoder.fpn_blocks.1.conv2.norm.bias, encoder.fpn_blocks.1.conv2.norm.weight, encoder.fpn_blocks.1.conv2.conv.weight, encoder.fpn_blocks.1.conv1.norm.bias, encoder.fpn_blocks.1.conv1.norm.weight, encoder.fpn_blocks.1.conv1.conv.weight, encoder.fpn_blocks.0.bottlenecks.2.conv2.norm.bias, encoder.fpn_blocks.0.bottlenecks.2.conv2.norm.weight, encoder.fpn_blocks.0.bottlenecks.2.conv2.conv.weight, encoder.fpn_blocks.0.bottlenecks.2.conv1.norm.bias, encoder.fpn_blocks.0.bottlenecks.2.conv1.norm.weight, encoder.fpn_blocks.0.bottlenecks.2.conv1.conv.weight, encoder.fpn_blocks.0.bottlenecks.1.conv2.norm.bias, encoder.fpn_blocks.0.bottlenecks.1.conv2.norm.weight, encoder.fpn_blocks.0.bottlenecks.1.conv2.conv.weight, encoder.fpn_blocks.0.bottlenecks.1.conv1.norm.bias, encoder.fpn_blocks.0.bottlenecks.1.conv1.norm.weight, encoder.fpn_blocks.0.bottlenecks.1.conv1.conv.weight, encoder.fpn_blocks.0.bottlenecks.0.conv2.norm.bias, encoder.fpn_blocks.0.bottlenecks.0.conv2.norm.weight, encoder.fpn_blocks.0.bottlenecks.0.conv2.conv.weight, encoder.fpn_blocks.0.bottlenecks.0.conv1.norm.bias, encoder.fpn_blocks.0.bottlenecks.0.conv1.norm.weight, encoder.fpn_blocks.0.bottlenecks.0.conv1.conv.weight, encoder.fpn_blocks.0.conv2.norm.bias, encoder.fpn_blocks.0.conv2.norm.weight, encoder.fpn_blocks.0.conv2.conv.weight, encoder.fpn_blocks.0.conv1.norm.bias, encoder.fpn_blocks.0.conv1.norm.weight, encoder.fpn_blocks.0.conv1.conv.weight, encoder.lateral_convs.1.norm.bias, encoder.lateral_convs.1.norm.weight, encoder.lateral_convs.1.conv.weight, encoder.lateral_convs.0.norm.bias, encoder.lateral_convs.0.norm.weight, encoder.lateral_convs.0.conv.weight
+Parameter indices which did not receive grad for rank 1: 279 280 281 282 283 284 285 286 287 288 289 290 291 292 293 294 295 296 297 298 299 300 301 302 303 304 305 306 307 308 309 310 311 312 313 314 315 316 317 318 319 320 321 322 323 324 325 326 327 328 329 330 331 332 333 334 335 336 337 338 339 340 341 342 343 344 345 346 347 348 349 350 351 352 353 354 355 356 357 358 359 360 361 362 363 364 365 366 367 368 369 370 371 372 373 374 375 376 377 378 ...
+Traceback (most recent call last):
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/train.py", line 50, in <module>
+    main(args)
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/train.py", line 36, in main
+    solver.fit()
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/../src/solver/det_solver.py", line 40, in fit
+    train_stats = train_one_epoch(
+                  ^^^^^^^^^^^^^^^^
+  File "/home/hslee/Backbone-Neck-Self-Distillation/RT-DETR/tools/../src/solver/det_engine.py", line 67, in train_one_epoch
+    outputs_w_neck = model(samples, targets, wNeck=wNeck)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/nn/parallel/distributed.py", line 1139, in forward
+    if torch.is_grad_enabled() and self.reducer._rebuild_buckets():
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one. This error indicates that your module has parameters that were not used in producing loss. You can enable unused parameter detection by passing the keyword argument `find_unused_parameters=True` to `torch.nn.parallel.DistributedDataParallel`, and by 
+making sure all `forward` function outputs participate in calculating loss. 
+If you already have done the above, then the distributed data parallel module wasn't able to locate the output tensors in the return value of your module's `forward` function. Please include the loss function and the structure of the return value of `forward` of your module when reporting this issue (e.g. list, dict, iterable).
+Parameters which did not receive grad for rank 0: encoder.pan_blocks.1.bottlenecks.2.conv2.norm.bias, encoder.pan_blocks.1.bottlenecks.2.conv2.norm.weight, encoder.pan_blocks.1.bottlenecks.2.conv2.conv.weight, encoder.pan_blocks.1.bottlenecks.2.conv1.norm.bias, encoder.pan_blocks.1.bottlenecks.2.conv1.norm.weight, encoder.pan_blocks.1.bottlenecks.2.conv1.conv.weight, encoder.pan_blocks.1.bottlenecks.1.conv2.norm.bias, encoder.pan_blocks.1.bottlenecks.1.conv2.norm.weight, encoder.pan_blocks.1.bottlenecks.1.conv2.conv.weight, encoder.pan_blocks.1.bottlenecks.1.conv1.norm.bias, encoder.pan_blocks.1.bottlenecks.1.conv1.norm.weight, encoder.pan_blocks.1.bottlenecks.1.conv1.conv.weight, encoder.pan_blocks.1.bottlenecks.0.conv2.norm.bias, encoder.pan_blocks.1.bottlenecks.0.conv2.norm.weight, encoder.pan_blocks.1.bottlenecks.0.conv2.conv.weight, encoder.pan_blocks.1.bottlenecks.0.conv1.norm.bias, encoder.pan_blocks.1.bottlenecks.0.conv1.norm.weight, encoder.pan_blocks.1.bottlenecks.0.conv1.conv.weight, encoder.pan_blocks.1.conv2.norm.bias, encoder.pan_blocks.1.conv2.norm.weight, encoder.pan_blocks.1.conv2.conv.weight, encoder.pan_blocks.1.conv1.norm.bias, encoder.pan_blocks.1.conv1.norm.weight, encoder.pan_blocks.1.conv1.conv.weight, encoder.pan_blocks.0.bottlenecks.2.conv2.norm.bias, encoder.pan_blocks.0.bottlenecks.2.conv2.norm.weight, encoder.pan_blocks.0.bottlenecks.2.conv2.conv.weight, encoder.pan_blocks.0.bottlenecks.2.conv1.norm.bias, encoder.pan_blocks.0.bottlenecks.2.conv1.norm.weight, encoder.pan_blocks.0.bottlenecks.2.conv1.conv.weight, encoder.pan_blocks.0.bottlenecks.1.conv2.norm.bias, encoder.pan_blocks.0.bottlenecks.1.conv2.norm.weight, encoder.pan_blocks.0.bottlenecks.1.conv2.conv.weight, encoder.pan_blocks.0.bottlenecks.1.conv1.norm.bias, encoder.pan_blocks.0.bottlenecks.1.conv1.norm.weight, encoder.pan_blocks.0.bottlenecks.1.conv1.conv.weight, encoder.pan_blocks.0.bottlenecks.0.conv2.norm.bias, encoder.pan_blocks.0.bottlenecks.0.conv2.norm.weight, encoder.pan_blocks.0.bottlenecks.0.conv2.conv.weight, encoder.pan_blocks.0.bottlenecks.0.conv1.norm.bias, encoder.pan_blocks.0.bottlenecks.0.conv1.norm.weight, encoder.pan_blocks.0.bottlenecks.0.conv1.conv.weight, encoder.pan_blocks.0.conv2.norm.bias, encoder.pan_blocks.0.conv2.norm.weight, encoder.pan_blocks.0.conv2.conv.weight, encoder.pan_blocks.0.conv1.norm.bias, encoder.pan_blocks.0.conv1.norm.weight, encoder.pan_blocks.0.conv1.conv.weight, encoder.downsample_convs.1.norm.bias, encoder.downsample_convs.1.norm.weight, encoder.downsample_convs.1.conv.weight, encoder.downsample_convs.0.norm.bias, encoder.downsample_convs.0.norm.weight, encoder.downsample_convs.0.conv.weight, encoder.fpn_blocks.1.bottlenecks.2.conv2.norm.bias, encoder.fpn_blocks.1.bottlenecks.2.conv2.norm.weight, encoder.fpn_blocks.1.bottlenecks.2.conv2.conv.weight, encoder.fpn_blocks.1.bottlenecks.2.conv1.norm.bias, encoder.fpn_blocks.1.bottlenecks.2.conv1.norm.weight, encoder.fpn_blocks.1.bottlenecks.2.conv1.conv.weight, encoder.fpn_blocks.1.bottlenecks.1.conv2.norm.bias, encoder.fpn_blocks.1.bottlenecks.1.conv2.norm.weight, encoder.fpn_blocks.1.bottlenecks.1.conv2.conv.weight, encoder.fpn_blocks.1.bottlenecks.1.conv1.norm.bias, encoder.fpn_blocks.1.bottlenecks.1.conv1.norm.weight, encoder.fpn_blocks.1.bottlenecks.1.conv1.conv.weight, encoder.fpn_blocks.1.bottlenecks.0.conv2.norm.bias, encoder.fpn_blocks.1.bottlenecks.0.conv2.norm.weight, encoder.fpn_blocks.1.bottlenecks.0.conv2.conv.weight, encoder.fpn_blocks.1.bottlenecks.0.conv1.norm.bias, encoder.fpn_blocks.1.bottlenecks.0.conv1.norm.weight, encoder.fpn_blocks.1.bottlenecks.0.conv1.conv.weight, encoder.fpn_blocks.1.conv2.norm.bias, encoder.fpn_blocks.1.conv2.norm.weight, encoder.fpn_blocks.1.conv2.conv.weight, encoder.fpn_blocks.1.conv1.norm.bias, encoder.fpn_blocks.1.conv1.norm.weight, encoder.fpn_blocks.1.conv1.conv.weight, encoder.fpn_blocks.0.bottlenecks.2.conv2.norm.bias, encoder.fpn_blocks.0.bottlenecks.2.conv2.norm.weight, encoder.fpn_blocks.0.bottlenecks.2.conv2.conv.weight, encoder.fpn_blocks.0.bottlenecks.2.conv1.norm.bias, encoder.fpn_blocks.0.bottlenecks.2.conv1.norm.weight, encoder.fpn_blocks.0.bottlenecks.2.conv1.conv.weight, encoder.fpn_blocks.0.bottlenecks.1.conv2.norm.bias, encoder.fpn_blocks.0.bottlenecks.1.conv2.norm.weight, encoder.fpn_blocks.0.bottlenecks.1.conv2.conv.weight, encoder.fpn_blocks.0.bottlenecks.1.conv1.norm.bias, encoder.fpn_blocks.0.bottlenecks.1.conv1.norm.weight, encoder.fpn_blocks.0.bottlenecks.1.conv1.conv.weight, encoder.fpn_blocks.0.bottlenecks.0.conv2.norm.bias, encoder.fpn_blocks.0.bottlenecks.0.conv2.norm.weight, encoder.fpn_blocks.0.bottlenecks.0.conv2.conv.weight, encoder.fpn_blocks.0.bottlenecks.0.conv1.norm.bias, encoder.fpn_blocks.0.bottlenecks.0.conv1.norm.weight, encoder.fpn_blocks.0.bottlenecks.0.conv1.conv.weight, encoder.fpn_blocks.0.conv2.norm.bias, encoder.fpn_blocks.0.conv2.norm.weight, encoder.fpn_blocks.0.conv2.conv.weight, encoder.fpn_blocks.0.conv1.norm.bias, encoder.fpn_blocks.0.conv1.norm.weight, encoder.fpn_blocks.0.conv1.conv.weight, encoder.lateral_convs.1.norm.bias, encoder.lateral_convs.1.norm.weight, encoder.lateral_convs.1.conv.weight, encoder.lateral_convs.0.norm.bias, encoder.lateral_convs.0.norm.weight, encoder.lateral_convs.0.conv.weight
+Parameter indices which did not receive grad for rank 0: 279 280 281 282 283 284 285 286 287 288 289 290 291 292 293 294 295 296 297 298 299 300 301 302 303 304 305 306 307 308 309 310 311 312 313 314 315 316 317 318 319 320 321 322 323 324 325 326 327 328 329 330 331 332 333 334 335 336 337 338 339 340 341 342 343 344 345 346 347 348 349 350 351 352 353 354 355 356 357 358 359 360 361 362 363 364 365 366 367 368 369 370 371 372 373 374 375 376 377 378 ...
+ERROR:torch.distributed.elastic.multiprocessing.api:failed (exitcode: 1) local_rank: 0 (pid: 1085612) of binary: /home/hslee/anaconda3/bin/python
+Traceback (most recent call last):
+  File "/home/hslee/anaconda3/bin/torchrun", line 33, in <module>
+    sys.exit(load_entry_point('torch==2.0.1', 'console_scripts', 'torchrun')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/run.py", line 794, in main
+    run(args)
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/run.py", line 785, in run
+    elastic_launch(
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 250, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+tools/train.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2024-08-01_19:17:51
+  host      : pascal
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 1085613)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2024-08-01_19:17:51
+  host      : pascal
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1085612)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

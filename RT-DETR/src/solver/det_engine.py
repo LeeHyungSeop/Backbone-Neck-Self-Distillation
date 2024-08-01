@@ -57,93 +57,48 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
         else:
             
-            wNeck = True
-            outputs_w_neck = model(samples, targets, wNeck=wNeck)
-            neck_outs = outputs_w_neck.pop('neck_outs')
-            backbone_outs = outputs_w_neck.pop('backbone_outs')
-            # for i, out in enumerate(neck_outs):
-            #     print(f"\tneck_out[{i}] : {out.shape}")
-            # for i, out in enumerate(backbone_outs):
-            #     print(f"\tbackbone_out[{i}] : {out.shape}")
-            
-            wNeck = False
-            outputs_wo_neck = model(samples, targets, wNeck=wNeck)
-            
-            
-            
-            # 2024.07.25 @hslee : criterion -> src/zoo/rtdetr/rtdetr_criterion.py
-            
-            """
-            # outputs key
-                '''
-                [Output Key] : pred_logits
-                [Output Key] : pred_boxes
-                [Output Key] : aux_outputs
-                [Output Key] : dn_aux_outputs
-                [Output Key] : dn_meta
-                '''
-            
-            # print(f"[Final Output]")
-            for key, value in outputs.items():
-                
-                if key == 'pred_logits':
-                    print(f"\t{key} : {value.shape}")
-                    # pred_logits : torch.Size([4, 300, 80])
-                    
-                elif key == 'pred_boxes':
-                    print(f"\t{key} : {value.shape}")
-                    # pred_boxes : torch.Size([4, 300, 4])
-                    
-                elif key == 'aux_outputs' or key == 'dn_aux_outputs': # key : list(key, value)
-                    print(f"\t{key} : ")
-                    for i in range(len(value)):
-                        for k, v in value[i].items():
-                            print(f"\t\t{key}[{i}][{k}] : {v.shape}")
-                            # aux_outputs : 
-                                # aux_outputs[0][pred_logits] : torch.Size([4, 300, 80])
-                                # aux_outputs[0][pred_boxes] : torch.Size([4, 300, 4])
-                                # ...
-                                # aux_outputs[5][pred_logits] : torch.Size([4, 300, 80])
-                                # aux_outputs[5][pred_boxes] : torch.Size([4, 300, 4])
-                            # dn_aux_outputs : 
-                                # dn_aux_outputs[0][pred_logits] : torch.Size([4, 200, 80])
-                                # dn_aux_outputs[0][pred_boxes] : torch.Size([4, 200, 4])
-                                # ...
-                                # dn_aux_outputs[5][pred_logits] : torch.Size([4, 200, 80])
-                                # dn_aux_outputs[5][pred_boxes] : torch.Size([4, 200, 4])
-            
-                elif key == 'dn_meta' : # key : (key, value)
-                    print(f"\t{key} : ")
-                    for k, v in value.items():
-                        print(f"\t\t{key}[{k}] : {v}")
-                        # dn_meta : 
-                            # dn_meta[dn_positive_idx] : tuple data type -> (tensor, tensor, tensor, tensor)
-                            # dn_meta[dn_num_group] : scalar
-                            # dn_meta[dn_num_split] : [scalar, scalar]
-            """
-            
-            loss_w_neck_dict = criterion(outputs_w_neck, targets)
-            loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
-            
-            loss_w_neck = sum(loss_w_neck_dict.values())
-            loss_wo_neck = sum(loss_wo_neck_dict.values())
-            
-            
-            ## 3. KLDiv
-            loss_nb_kd = 0
-            for i in range(3):
-                loss_nb_kd += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
-            loss_nb_kd /= 3
+            # 2024.08.01 @hslee KL-Div (forward-backward, forward-backward, update)
             
             optimizer.zero_grad()
             alpha = 0.5
-            loss = alpha * loss_w_neck + (1 - alpha) * loss_wo_neck + loss_nb_kd
-            loss.backward()
+            T = 4.0
+             
+            wNeck = True
+            outputs_w_neck = model(samples, targets, wNeck=wNeck)
+            backbone_outs = outputs_w_neck.pop('backbone_outs') 
+            neck_outs = outputs_w_neck.pop('neck_outs')
+            
+            loss_w_neck_dict = criterion(outputs_w_neck, targets)
+            loss_w_neck = sum(loss_w_neck_dict.values())
+            loss_w_neck = alpha * loss_w_neck
+            
+            loss_w_neck.backward(retain_graph=True)
+            
+            
+            wNeck = False
+            outputs_wo_neck = model(samples, targets, wNeck=wNeck)
+            loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
+            loss_wo_neck = sum(loss_wo_neck_dict.values())
+            loss_wo_neck = (1 - alpha) *loss_wo_neck
+            
+            ## KL-Div
+            loss_nb_kd = 0
+            for i in range(len(neck_outs)):
+                student = F.log_softmax(backbone_outs[i] / T, dim=1)
+                teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
+                loss_nb_kd += F.kl_div(student, teacher, reduction='batchmean') * (T**2)
+            loss_nb_kd /= len(neck_outs)
+                
+            
+            loss_wo_neck = loss_wo_neck + loss_nb_kd
+            loss_wo_neck.backward()
+            
+            optimizer.step()
             
             if max_norm > 0:
+                print("here")
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
 
-            optimizer.step()
         
         # ema 
         if ema is not None:
@@ -154,7 +109,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         
         loss_value_w_neck = sum(loss_dict_w_neck_reduced.values())
         loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
-        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck
+        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_nb_kd
 
         if not math.isfinite(loss_value_w_neck):
             print("Loss is {}, stopping training".format(loss_value_w_neck))
