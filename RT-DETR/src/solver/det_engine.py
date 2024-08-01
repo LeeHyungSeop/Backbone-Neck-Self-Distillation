@@ -157,6 +157,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             # 2. MSSD
             gamma = 0.05
             loss_nb_kd = total_loss(backbone_outs[0], neck_outs[0], backbone_outs[1], neck_outs[1], backbone_outs[2], neck_outs[2], gamma)
+            loss_nb_kd /= len(backbone_outs)
             
             if max_norm > 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
