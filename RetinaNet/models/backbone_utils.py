@@ -57,18 +57,18 @@ class BackboneWithFPN(nn.Module):
         self.out_channels = out_channels
 
     def forward(self, x: Tensor) -> Dict[str, Tensor]:
-        print(f"[backbone_utils.py]")
-        print(f"\timage.shape: {x.shape}")
+        # print(f"[backbone_utils.py]")
+        # print(f"\timage.shape: {x.shape}")
         
         x = self.body(x) # IntermediateLayerGetter()
-        print(f"[after IntermediateLayerGetter()]")
-        for key in x.keys():
-            print(f"\tx[{key}].shape : {x[key].shape}")
+        # print(f"[after IntermediateLayerGetter()]")
+        # for key in x.keys():
+        #     print(f"\tx[{key}].shape : {x[key].shape}")
         
         x = self.fpn(x) # FeaturePyramidNetwork()
-        print(f"[after FeaturePyramidNetwork()]")
-        for key in x.keys():
-            print(f"\tout[{key}].shape : {x[key].shape}")
+        # print(f"[after FeaturePyramidNetwork()]")
+        # for key in x.keys():
+        #     print(f"\tout[{key}].shape : {x[key].shape}")
             
         '''
             [backbone_utils.py]
