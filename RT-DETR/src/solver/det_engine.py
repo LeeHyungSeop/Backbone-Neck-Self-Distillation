@@ -154,7 +154,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             # loss_nb_kd /= 3
             
 
-            # 2. MSSD
+            # 2. MSSD (collaborative learning)
             gamma = 0.05
             loss_nb_kd = total_loss(backbone_outs[0], neck_outs[0], backbone_outs[1], neck_outs[1], backbone_outs[2], neck_outs[2], gamma)
             loss_nb_kd /= len(backbone_outs)
