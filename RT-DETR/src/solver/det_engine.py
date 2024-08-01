@@ -13,6 +13,7 @@ from typing import Iterable
 
 import torch
 import torch.amp 
+import torch.nn as nn
 import torch.nn.functional as F 
 
 from src.data import CocoEvaluator
@@ -72,7 +73,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss_w_neck = sum(loss_w_neck_dict.values())
             loss_w_neck = alpha * loss_w_neck
             
-            loss_w_neck.backward(retain_graph=True)
+            # loss_w_neck.backward(retain_graph=True)
             
             
             wNeck = False
@@ -81,22 +82,26 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss_wo_neck = sum(loss_wo_neck_dict.values())
             loss_wo_neck = (1 - alpha) *loss_wo_neck
             
+            kl_div = nn.KLDivLoss(reduction='batchmean')
+            
             ## KL-Div
             loss_nb_kd = 0
-            for i in range(len(neck_outs)):
+            for i in range(len(neck_outs)): # feature map (bs, c, h, w)
                 student = F.log_softmax(backbone_outs[i] / T, dim=1)
                 teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
-                loss_nb_kd += F.kl_div(student, teacher, reduction='batchmean') * (T**2)
+                loss_nb_kd += kl_div(student, teacher) * (T * T)
             loss_nb_kd /= len(neck_outs)
                 
             
-            loss_wo_neck = loss_wo_neck + loss_nb_kd
-            loss_wo_neck.backward()
+            loss_wo_neck = loss_wo_neck + 0.001 *  loss_nb_kd
+            # loss_wo_neck.backward()
+            
+            loss = loss_w_neck + loss_wo_neck
+            loss.backward()
             
             optimizer.step()
             
             if max_norm > 0:
-                print("here")
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
 
         
@@ -109,7 +114,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         
         loss_value_w_neck = sum(loss_dict_w_neck_reduced.values())
         loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
-        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_nb_kd
+        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + 0.001 * loss_nb_kd
 
         if not math.isfinite(loss_value_w_neck):
             print("Loss is {}, stopping training".format(loss_value_w_neck))

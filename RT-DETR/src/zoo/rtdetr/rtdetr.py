@@ -13,6 +13,19 @@ from src.core import register
 
 __all__ = ['RTDETR', ]
 
+class AdaptiveLayer(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(AdaptiveLayer, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, 1)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.act = nn.ReLU()
+        
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.act(x)
+        return x
+    
 
 @register
 class RTDETR(nn.Module):
@@ -24,6 +37,9 @@ class RTDETR(nn.Module):
         self.decoder = decoder
         self.encoder = encoder
         self.multi_scale = multi_scale
+        self.adaptive_layer_0 = AdaptiveLayer(512, 256)
+        self.adaptive_layer_1 = AdaptiveLayer(1024, 256)
+        self.adaptive_layer_2 = AdaptiveLayer(2048, 256)
         
     def forward(self, x, targets=None, wNeck=False):
         if self.multi_scale and self.training:
@@ -31,6 +47,10 @@ class RTDETR(nn.Module):
             x = F.interpolate(x, size=[sz, sz])
             
         x = self.backbone(x)
+        if wNeck:
+            adap_s3 = self.adaptive_layer_0(x[0])
+            adap_s4 = self.adaptive_layer_1(x[1])
+            adap_s5 = self.adaptive_layer_2(x[2])
         '''
         for i in range(len(x)):
             print(f"\tx[{i}] : {x[i].shape}")
@@ -58,6 +78,10 @@ class RTDETR(nn.Module):
         
         if wNeck :
             x = neck_outs
+            # skip connection
+            x[0] = x[0] + adap_s3
+            x[1] = x[1] + adap_s4
+            x[2] = x[2] + adap_s5
         else : 
             x = backbone_outs
             

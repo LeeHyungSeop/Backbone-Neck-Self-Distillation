@@ -6,4 +6,4 @@ __include__: [
   './include/rtdetr_r50vd.yml',
 ]
 
-output_dir: ./output/rtdetr_r50vd_6x_coco_fbfb_B-N_S-D_KLDiv_T4
+output_dir: ./output/rtdetr_r50vd_6x_coco_ffb_B-N_S-D_KLDiv_T4_skipConn
