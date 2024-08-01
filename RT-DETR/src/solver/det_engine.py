@@ -18,6 +18,22 @@ import torch.nn.functional as F
 from src.data import CocoEvaluator
 from src.misc import (MetricLogger, SmoothedValue, reduce_dict)
 
+def loss(S, T, gamma = 1):
+    # N : number of elements in each feature map
+    N = S.shape[1] * S.shape[2] * S.shape[3] 
+    # (bs, C, H, W) -> (bs, H, W, C)
+    S = S.permute(0, 2, 3, 1)
+    T = T.permute(0, 2, 3, 1)
+    loss = (gamma / N) * torch.sum((S - T) ** 2)
+    return loss
+
+
+def total_loss(S_s, T_s, S_m, T_m, S_l, T_l, gamma):
+    L_s = loss(S_s, T_s, gamma)
+    L_m = loss(S_m, T_m)
+    L_l = loss(S_l, T_l)
+    return L_s + L_m + L_l
+
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
@@ -66,8 +82,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             # for i, out in enumerate(backbone_outs):
             #     print(f"\tbackbone_out[{i}] : {out.shape}")
             
-            wNeck = False
-            outputs_wo_neck = model(samples, targets, wNeck=wNeck)
+            # wNeck = False
+            # outputs_wo_neck = model(samples, targets, wNeck=wNeck)
             
             
             
@@ -123,26 +139,33 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             """
             
             loss_w_neck_dict = criterion(outputs_w_neck, targets)
-            loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
+            # loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
             
             loss_w_neck = sum(loss_w_neck_dict.values())
-            loss_wo_neck = sum(loss_wo_neck_dict.values())
+            # loss_wo_neck = sum(loss_wo_neck_dict.values())
             
-            
-            ## 3. KLDiv
-            loss_nb_kd = 0
-            for i in range(3):
-                loss_nb_kd += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
-            loss_nb_kd /= 3
             
             optimizer.zero_grad()
-            alpha = 0.5
-            loss = alpha * loss_w_neck + (1 - alpha) * loss_wo_neck + loss_nb_kd
-            loss.backward()
+            loss_nb_kd = 0
+            
+            # # 1. KLDiv
+            # for i in range(3):
+            #     loss_nb_kd += F.kl_div(F.log_softmax(neck_outs[i], dim=1), F.softmax(backbone_outs[i], dim=1))
+            # loss_nb_kd /= 3
+            
+
+            # 2. MSSD
+            gamma = 0.05
+            loss_nb_kd = total_loss(backbone_outs[0], neck_outs[0], backbone_outs[1], neck_outs[1], backbone_outs[2], neck_outs[2], gamma)
             
             if max_norm > 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
-
+                
+            # jointly train with neck and wo_neck
+            # alpha = 0.5
+            # loss = alpha * loss_w_neck + (1 - alpha) * loss_wo_neck + loss_nb_kd
+            loss = loss_w_neck + loss_nb_kd
+            loss.backward()
             optimizer.step()
         
         # ema 
@@ -150,26 +173,27 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             ema.update(model)
 
         loss_dict_w_neck_reduced = reduce_dict(loss_w_neck_dict)
-        loss_dict_wo_neck_reduced = reduce_dict(loss_wo_neck_dict)
+        # loss_dict_wo_neck_reduced = reduce_dict(loss_wo_neck_dict)
         
         loss_value_w_neck = sum(loss_dict_w_neck_reduced.values())
-        loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
-        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck
+        # loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
+        # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_nb_kd
+        loss_value = loss_value_w_neck + loss_nb_kd
 
         if not math.isfinite(loss_value_w_neck):
             print("Loss is {}, stopping training".format(loss_value_w_neck))
             print(loss_dict_w_neck_reduced)
             sys.exit(1)
-        if not math.isfinite(loss_value_wo_neck):
-            print("Loss is {}, stopping training".format(loss_value_wo_neck))
-            print(loss_dict_wo_neck_reduced)
-            sys.exit(1)
+        # if not math.isfinite(loss_value_wo_neck):
+        #     print("Loss is {}, stopping training".format(loss_value_wo_neck))
+        #     print(loss_dict_wo_neck_reduced)
+        #     sys.exit(1)
 
         
         metric_logger.update(loss=loss_value)
         metric_logger.update(KD=loss_nb_kd)
         metric_logger.update(loss_w_neck=loss_value_w_neck, **loss_dict_w_neck_reduced)
-        metric_logger.update(loss_wo_neck=loss_value_wo_neck, **loss_dict_wo_neck_reduced)
+        # metric_logger.update(loss_wo_neck=loss_value_wo_neck, **loss_dict_wo_neck_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
     # gather the stats from all processes
