@@ -1,0 +1,19 @@
+WARNING:torch.distributed.run:
+*****************************************
+Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+*****************************************
+Initialized distributed mode...
+Start training
+Load PResNet50 state_dict
+weight_dict: {'loss_vfl': 1, 'loss_bbox': 5, 'loss_giou': 2}
+Initial lr:  [1e-05, 0.0001, 0.0001, 0.0001]
+loading annotations into memory...
+Done (t=7.88s)
+creating index...
+index created!
+loading annotations into memory...
+Done (t=0.19s)
+creating index...
+index created!
+number of params: 42862860
+Epoch: [0]  [    0/14786]  eta: 7:12:12  lr: 0.000010  loss: 44.4561 (44.4561)  loss_w_neck: 44.3768 (44.3768)  loss_bbox: 1.5360 (1.5692)  loss_bbox_aux_0: 1.5449 (1.5796)  loss_bbox_aux_1: 1.5389 (1.5532)  loss_bbox_aux_2: 1.5704 (1.5941)  loss_bbox_aux_3: 1.5406 (1.5619)  loss_bbox_aux_4: 1.5261 (1.5319)  loss_bbox_aux_5: 1.5677 (1.5838)  loss_bbox_dn_0: 0.8800 (0.8811)  loss_bbox_dn_1: 0.8800 (0.8811)  loss_bbox_dn_2: 0.8800 (0.8811)  loss_bbox_dn_3: 0.8800 (0.8811)  loss_bbox_dn_4: 0.8800 (0.8811)  loss_bbox_dn_5: 0.8800 (0.8811)  loss_giou: 1.7980 (1.8152)  loss_giou_aux_0: 1.7894 (1.8090)  loss_giou_aux_1: 1.8082 (1.8267)  loss_giou_aux_2: 1.7745 (1.7880)  loss_giou_aux_3: 1.7538 (1.7904)  loss_giou_aux_4: 1.8088 (1.8321)  loss_giou_aux_5: 1.8025 (1.8353)  loss_giou_dn_0: 1.3110 (1.3175)  loss_giou_dn_1: 1.3110 (1.3175)  loss_giou_dn_2: 1.3110 (1.3175)  loss_giou_dn_3: 1.3110 (1.3175)  loss_giou_dn_4: 1.3110 (1.3175)  loss_giou_dn_5: 1.3110 (1.3175)  loss_vfl: 0.3222 (0.3315)  loss_vfl_aux_0: 0.2916 (0.3265)  loss_vfl_aux_1: 0.2855 (0.3138)  loss_vfl_aux_2: 0.3247 (0.3510)  loss_vfl_aux_3: 0.3067 (0.3365)  loss_vfl_aux_4: 0.3012 (0.3324)  loss_vfl_aux_5: 0.3073 (0.3326)  loss_vfl_dn_0: 0.8846 (0.8933)  loss_vfl_dn_1: 0.8307 (0.8435)  loss_vfl_dn_2: 0.8851 (0.8909)  loss_vfl_dn_3: 0.8736 (0.8916)  loss_vfl_dn_4: 0.8761 (0.8787)  loss_vfl_dn_5: 0.8645 (0.8722)  loss_wo_neck: 44.5354 (44.5354)  time: 1.7539  data: 0.4046  max mem: 6143
