@@ -202,8 +202,11 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
-        # ([32, 2048, 7, 7]) -> (7, 7) patch token and 2048 length
-        # self.self_attn = nn.MultiheadAttention(embed_dim=2048, num_heads=8)
+        
+        # resnet output feature map ([32, 2048, 7, 7]) -> self-attention -> ([32, 2048, 7, 7])
+        self.self_attn = nn.MultiheadAttention(embed_dim=2048, num_heads=8)
+        
+        
         
         
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -282,7 +285,9 @@ class ResNet(nn.Module):
         layer4 shape: torch.Size([32, 2048, 7, 7])
         '''
         
-        # x = self.self_attn(x)
+        # 2024.08.05 @hslee
+        x = self.self_attn(x, x, x)
+        print(f"self_attn shape: {x.shape}")
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
