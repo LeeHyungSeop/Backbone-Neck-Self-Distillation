@@ -83,14 +83,17 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss_wo_neck = (1 - alpha) * loss_wo_neck
             
             
-            # ## KL-Div
-            # kl_div = nn.KLDivLoss(reduction='batchmean')
-            # loss_nb_kd = 0
-            # for i in range(len(neck_outs)): # feature map (bs, c, h, w)
-            #     student = F.log_softmax(backbone_outs[i] / T, dim=1)
-            #     teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
-            #     loss_nb_kd += kl_div(student, teacher) * (T * T)
-            # loss_nb_kd /= len(neck_outs)
+            ## KL-Div
+            kl_div = nn.KLDivLoss(reduction='batchmean')
+            loss_nb_kd = 0
+            loss_bn_kd = 0
+            for i in range(len(neck_outs)): # feature map (bs, c, h, w)
+                student = F.log_softmax(backbone_outs[i] / T, dim=1)
+                teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
+                loss_nb_kd += kl_div(student, teacher) * (T * T)
+                loss_bn_kd += kl_div(teacher, student) * (T * T)
+            loss_nb_kd /= len(neck_outs)
+            loss_bn_kd /= len(neck_outs)
             
             # kl_div = nn.KLDivLoss(reduction='batchmean')
             # loss_nb_kd = 0
@@ -109,7 +112,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             # loss_wo_neck = loss_wo_neck + 0.001 *  loss_nb_kd
             # loss_wo_neck.backward()
             
-            loss = loss_w_neck + loss_wo_neck
+            # collaborative learning between backbone and neck
+            loss = loss_w_neck + loss_wo_neck + loss_nb_kd + loss_bn_kd
             loss.backward()
             
             optimizer.step()
@@ -127,8 +131,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         
         loss_value_w_neck = sum(loss_dict_w_neck_reduced.values())
         loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
-        # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + 0.001 * loss_nb_kd
-        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck
+        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_nb_kd + loss_bn_kd
+        # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck
 
         if not math.isfinite(loss_value_w_neck):
             print("Loss is {}, stopping training".format(loss_value_w_neck))
@@ -142,7 +146,8 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         
         metric_logger.update(loss=loss_value)
         # 2024.08.03 @hslee No KD Loss
-        # metric_logger.update(KD=loss_nb_kd)
+        metric_logger.update(nb_kd=loss_nb_kd)
+        metric_logger.update(bn_kd=loss_bn_kd)
         metric_logger.update(loss_w_neck=loss_value_w_neck, **loss_dict_w_neck_reduced)
         metric_logger.update(loss_wo_neck=loss_value_wo_neck, **loss_dict_wo_neck_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
