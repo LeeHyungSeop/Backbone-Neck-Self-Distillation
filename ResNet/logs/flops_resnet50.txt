@@ -1,0 +1,125 @@
+| distributed init (rank 0): env://
+Namespace(data_path='/media/data/ILSVRC2012', model='resnet50', device='cuda', batch_size=32, epochs=90, workers=16, opt='sgd', lr=0.1, momentum=0.9, weight_decay=0.0001, norm_weight_decay=None, bias_weight_decay=None, transformer_embedding_decay=None, label_smoothing=0.0, mixup_alpha=0.0, cutmix_alpha=0.0, lr_scheduler='steplr', lr_warmup_epochs=0, lr_warmup_method='constant', lr_warmup_decay=0.01, lr_step_size=30, lr_gamma=0.1, lr_min=0.0, print_freq=10, output_dir='.', resume='', start_epoch=0, cache_dataset=False, sync_bn=False, test_only=True, auto_augment=None, ra_magnitude=9, augmix_severity=3, random_erase=0.0, amp=False, world_size=1, dist_url='env://', model_ema=False, model_ema_steps=32, model_ema_decay=0.99998, use_deterministic_algorithms=False, interpolation='bilinear', val_resize_size=256, val_crop_size=224, train_crop_size=224, clip_grad_norm=None, ra_sampler=False, ra_reps=3, weights=None, backend='pil', use_v2=False, rank=0, gpu=0, distributed=True, dist_backend='nccl')
+Loading data
+Loading training data
+Took 1.2220420837402344
+Loading validation data
+Creating data loaders
+Creating model
+kernel_sum: torch.Size([2048])
+indices: tensor([1178, 1905,  179, 1538, 1508, 1581,  907,  574, 1680,  355,  386, 1715,
+         236, 1445,  819,  791,  712, 1280, 1331, 1385,  878, 1188,  379, 1131,
+         221,  833,  111, 1493, 1593, 1209,   35,  827, 1038, 1196,  512,  733,
+        1387,  755,  451,  606, 1277,  758,  100,  651,  912,  495,  471,  157,
+          90, 1422, 1725, 1014,  502, 1088, 1363, 1810, 1550, 1710,  341,  863,
+         201, 1727,  209, 1245, 1694, 1105,  834,   58,  800, 1780,  782,  716,
+        1466, 1707, 1842, 1654, 1410,  596,  219,  663,  466, 1165,  868,  185,
+        1000,  736, 1525,  144,  690, 1362,  735, 1035, 1716,  125, 1152,  551,
+         960,  785,  206,  784, 1562,  694,  854, 1812,  624,  394,  592, 1517,
+        1811, 1082,  459, 1326,  881,  724,  480,  565,  152,  824,  771,  657,
+         891, 1485, 1574,  980, 1206, 1009,  523,  879,  802, 1234,  842,  949,
+        1914, 1835,  116,  330, 1620, 1971, 2030, 1982, 1909, 1241, 1374, 1184,
+         278, 1356, 1527,  505,  224,  220, 1589, 1026, 1434,  536,  270,   55,
+        2041, 1463, 1632,  966, 1191, 1446,  441, 1913, 1777, 1585,  172, 1049,
+        1442, 1357,  114,  301,  238, 1536,  241, 1126, 1319,  761,  994, 1904,
+        1675, 1957,  486, 1988, 1641, 1160, 1953,  109, 1138,  106, 1346,  820,
+         990, 1828,  194,  867,  738, 1687, 1482, 2010, 1148,  953, 1503, 1488,
+        1876, 1544,  697,  273, 1608,   36,  852, 1419, 1783,  112,  639, 1376,
+         533,  101, 1002,  132, 1345,  967, 1584,  421,  381,  808, 1325,  375,
+        1543, 1610, 1843, 1351,    6, 1478, 1247,  306,  932,   69, 1474,  436,
+         258,  259,  679, 1869, 1968,  508, 1975,  540,  365,  993,   93, 1510,
+        1754,  555,  255,  541, 1093, 1182, 1390, 1824,  102,  605,  186,  992,
+         999,  346, 1338,  704,  347, 1714,  764, 1851, 1708,  965,  496, 1062,
+         871,   70, 1627, 1415,   22,  556,  467,  614, 1955,  955,  448, 1174,
+         256,  940, 1744, 1359,  160,  589, 1555,  729, 1127, 2024,   49,  213,
+        1906, 1722,  239,  963,  859, 2007, 1244, 1761,  458, 1795,   43, 1704,
+        1388, 1586, 1873,  484,  118, 1976, 1100,  323, 1087, 1604,  675,  418,
+        1741,  237,   95,  390, 1866,  894,  129, 1984,   94, 1560,  452, 1172,
+         225,   42, 1031, 1573, 1465,   53, 1484,   32,  521, 1170,  361, 1598,
+        1257,  263, 1056, 1169, 1048,  815,    9,  943,  930,  309,  138, 1203,
+        1230,  280, 1706,   85,  855, 1848, 1987, 1121,  933,  900,  575,  124,
+        1116,  570,  613,  577,   64, 1652,  345, 1557,  732, 1113,  141,  468,
+        1173,  812, 1327, 1239, 1032,  454,  171, 1884, 1168, 1460,  400, 1095,
+        1742,  410,  603, 1375,  773, 1339, 1813,  569,   66, 1974,  358, 1596,
+         715], device='cuda:0')
+Traceback (most recent call last):
+  File "/home/hslee/Backbone-Neck-Self-Distillation/ResNet/train.py", line 535, in <module>
+    main(args)
+  File "/home/hslee/Backbone-Neck-Self-Distillation/ResNet/train.py", line 367, in main
+    evaluate(model, criterion, data_loader_test, device=device)
+  File "/home/hslee/Backbone-Neck-Self-Distillation/ResNet/train.py", line 68, in evaluate
+    print(flop_count_table(flops))
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/fvcore/nn/print_model_statistics.py", line 632, in flop_count_table
+    stats = {params_header: params, flops_header: flops.by_module()}
+                                                  ^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/fvcore/nn/jit_analysis.py", line 291, in by_module
+    stats = self._analyze()
+            ^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/fvcore/nn/jit_analysis.py", line 551, in _analyze
+    graph = _get_scoped_trace_graph(self._model, self._inputs, self._aliases)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/fvcore/nn/jit_analysis.py", line 176, in _get_scoped_trace_graph
+    graph, _ = _get_trace_graph(module, inputs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/jit/_trace.py", line 1268, in _get_trace_graph
+    outs = ONNXTracedModule(f, strict, _force_outplace, return_inputs, _return_inputs_states)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/jit/_trace.py", line 127, in forward
+    graph, out = torch._C._create_graph_by_tracing(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/jit/_trace.py", line 118, in wrapper
+    outs.append(self.inner(*trace_inputs))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1538, in _call_impl
+    result = forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1488, in _slow_forward
+    result = self.forward(*input, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/Backbone-Neck-Self-Distillation/ResNet/models/resnet.py", line 344, in forward
+    return self._forward_impl(x)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/Backbone-Neck-Self-Distillation/ResNet/models/resnet.py", line 326, in _forward_impl
+    x = self._process_input(x)  # (32, 49, 2048)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/Backbone-Neck-Self-Distillation/ResNet/models/resnet.py", line 289, in _process_input
+    n, c, h, w = x.shape
+                 ^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'shape'
+ERROR:torch.distributed.elastic.multiprocessing.api:failed (exitcode: 1) local_rank: 0 (pid: 1339397) of binary: /home/hslee/anaconda3/bin/python
+Traceback (most recent call last):
+  File "/home/hslee/anaconda3/bin/torchrun", line 33, in <module>
+    sys.exit(load_entry_point('torch==2.0.1', 'console_scripts', 'torchrun')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/run.py", line 794, in main
+    run(args)
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/run.py", line 785, in run
+    elastic_launch(
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hslee/anaconda3/lib/python3.11/site-packages/torch/distributed/launcher/api.py", line 250, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2024-08-05_13:51:41
+  host      : pascal
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1339397)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

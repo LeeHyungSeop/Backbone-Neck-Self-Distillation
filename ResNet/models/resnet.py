@@ -1,15 +1,18 @@
 from functools import partial
 from typing import Any, Callable, List, Optional, Type, Union
+from collections import OrderedDict
 
 import torch
 import torch.nn as nn
 from torch import Tensor
 
+from torchvision.ops.misc import MLP
 from torchvision.transforms._presets import ImageClassification
 from torchvision.utils import _log_api_usage_once
 from ._api import register_model, Weights, WeightsEnum
 from ._meta import _IMAGENET_CATEGORIES
 from ._utils import _ovewrite_named_param, handle_legacy_interface
+
 
 
 __all__ = [
@@ -55,6 +58,124 @@ def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> nn.Conv2d:
     """1x1 convolution"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
+class MLPBlock(MLP):
+    """Transformer MLP block."""
+
+    _version = 2
+
+    def __init__(self, in_dim: int, mlp_dim: int, dropout: float):
+        super().__init__(in_dim, [mlp_dim, in_dim], activation_layer=nn.GELU, inplace=None, dropout=dropout)
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.normal_(m.bias, std=1e-6)
+
+    def _load_from_state_dict(
+        self,
+        state_dict,
+        prefix,
+        local_metadata,
+        strict,
+        missing_keys,
+        unexpected_keys,
+        error_msgs,
+    ):
+        version = local_metadata.get("version", None)
+
+        if version is None or version < 2:
+            # Replacing legacy MLPBlock with MLP. See https://github.com/pytorch/vision/pull/6053
+            for i in range(2):
+                for type in ["weight", "bias"]:
+                    old_key = f"{prefix}linear_{i+1}.{type}"
+                    new_key = f"{prefix}{3*i}.{type}"
+                    if old_key in state_dict:
+                        state_dict[new_key] = state_dict.pop(old_key)
+
+        super()._load_from_state_dict(
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+        )
+
+
+class EncoderBlock(nn.Module):
+    """Transformer encoder block."""
+
+    def __init__(
+        self,
+        num_heads: int,
+        hidden_dim: int,
+        mlp_dim: int,
+        dropout: float,
+        attention_dropout: float,
+        norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
+    ):
+        super().__init__()
+        self.num_heads = num_heads
+
+        # Attention block
+        self.ln_1 = norm_layer(hidden_dim)
+        self.self_attention = nn.MultiheadAttention(hidden_dim, num_heads, dropout=attention_dropout, batch_first=True)
+        self.dropout = nn.Dropout(dropout)
+
+        # MLP block
+        self.ln_2 = norm_layer(hidden_dim)
+        self.mlp = MLPBlock(hidden_dim, mlp_dim, dropout)
+
+    def forward(self, input: torch.Tensor):
+        torch._assert(input.dim() == 3, f"Expected (batch_size, seq_length, hidden_dim) got {input.shape}")
+        x = self.ln_1(input)
+        x, _ = self.self_attention(x, x, x, need_weights=False)
+        x = self.dropout(x)
+        x = x + input
+
+        y = self.ln_2(x)
+        y = self.mlp(y)
+        return x + y
+
+
+class Encoder(nn.Module):
+    """Transformer Model Encoder for sequence to sequence translation."""
+
+    def __init__(
+        self,
+        seq_length: int,
+        num_layers: int,
+        num_heads: int,
+        hidden_dim: int,
+        mlp_dim: int,
+        dropout: float,
+        attention_dropout: float,
+        norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
+    ):
+        super().__init__()
+        # Note that batch_size is on the first dim because
+        # we have batch_first=True in nn.MultiAttention() by default
+        self.pos_embedding = nn.Parameter(torch.empty(1, seq_length, hidden_dim).normal_(std=0.02))  # from BERT
+        self.dropout = nn.Dropout(dropout)
+        layers: OrderedDict[str, nn.Module] = OrderedDict()
+        for i in range(num_layers):
+            layers[f"encoder_layer_{i}"] = EncoderBlock(
+                num_heads,
+                hidden_dim,
+                mlp_dim,
+                dropout,
+                attention_dropout,
+                norm_layer,
+            )
+        self.layers = nn.Sequential(layers)
+        self.ln = norm_layer(hidden_dim)
+
+    def forward(self, input: torch.Tensor):
+        torch._assert(input.dim() == 3, f"Expected (batch_size, seq_length, hidden_dim) got {input.shape}")
+        input = input + self.pos_embedding
+        return self.ln(self.layers(self.dropout(input)))
 
 class BasicBlock(nn.Module):
     expansion: int = 1
@@ -203,14 +324,26 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
         
-        # resnet output feature map ([32, 2048, 7, 7]) -> self-attention -> ([32, 2048, 7, 7])
-        self.self_attn = nn.MultiheadAttention(embed_dim=2048, num_heads=8)
+        # 2024.08.05 @hslee
+        self.save_top = 2048
         
-        
+        # resnet output feature map ([32, 256, 7, 7]) -> self-attention -> ([32, 256, 7, 7])
+        hidden_dim = self.save_top
+        self.encoder = Encoder(
+            seq_length=49,
+            num_layers=1,
+            num_heads=8,
+            hidden_dim=self.save_top,
+            mlp_dim=self.save_top * 4,
+            dropout = 0.1,
+            attention_dropout = 0.1,
+            norm_layer = nn.LayerNorm,
+        )
         
         
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        # self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(self.save_top, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -269,6 +402,38 @@ class ResNet(nn.Module):
             )
 
         return nn.Sequential(*layers)
+    
+    def _filter_pruning(self, x: torch.Tensor, save_top: int):
+        n, c, h, w = x.shape
+        
+        # 1. sort by the sum of its absolute kernel weights and get the save_top index
+        kernel_sum = torch.sum(torch.abs(x), dim=(0, 2, 3)) # (c=2048,)
+        _, indices = torch.topk(kernel_sum, save_top) # (save_top,)
+        
+        x = x[:, indices, :, :] # (n, save_top, h, w)
+        return x
+        
+
+    def _process_input(self, x: torch.Tensor) -> torch.Tensor:
+        n, c, h, w = x.shape
+
+        # (n, hidden_dim, h, w) -> (n, hidden_dim, (h * w))
+        x = x.reshape(n, c, h * w)
+
+        # (n, hidden_dim, (h * w)) -> (n, (h * w), hidden_dim)
+        # The self attention layer expects inputs in the format (N, S, E)
+        # where S is the source sequence length, N is the batch size, E is the
+        # embedding dimension
+        x = x.permute(0, 2, 1)
+        
+        return x
+
+    def _process_output(self, x: torch.Tensor) -> torch.Tensor:
+        n, s, e = x.shape
+        x = x.permute(0, 2, 1) # (n, (h * w), hidden_dim) -> (n, hidden_dim, (h * w))
+        x = x.reshape(n, e, int(s ** 0.5), int(s ** 0.5)) # (n, hidden_dim, (h * w)) -> (n, hidden_dim, h, w)
+        return x
+        
 
     def _forward_impl(self, x: Tensor) -> Tensor:
         # See note [TorchScript super()]
@@ -286,8 +451,12 @@ class ResNet(nn.Module):
         '''
         
         # 2024.08.05 @hslee
-        x = self.self_attn(x, x, x)
-        print(f"self_attn shape: {x.shape}")
+        x = self._filter_pruning(x, save_top = self.save_top)
+        x = self._process_input(x)  # (32, 49, save_top)
+        x = self.encoder(x) # (32, 49, save_top)
+        
+        x = self._process_output(x) # (32, save_top, 7, 7)
+        # --------------------------------------------------------------------------------
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
@@ -298,7 +467,6 @@ class ResNet(nn.Module):
         fc shape: torch.Size([32, 1000])
         '''
         
-
         return x
 
     def forward(self, x: Tensor) -> Tensor:

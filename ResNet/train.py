@@ -15,7 +15,7 @@ from torch.utils.data.dataloader import default_collate
 from torchvision.transforms.functional import InterpolationMode
 from transforms import get_mixup_cutmix
 import models
-
+from fvcore.nn import FlopCountAnalysis, flop_count_table
 
 def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch, args, model_ema=None, scaler=None):
     model.train()
@@ -61,7 +61,14 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch, arg
 
 
 def evaluate(model, criterion, data_loader, device, print_freq=100, log_suffix=""):
+    
     model.eval()
+    
+    # # flops
+    # input = torch.randn(1, 3, 224, 224).to(device)
+    # flops = FlopCountAnalysis(model, input)
+    # print(flop_count_table(flops))
+    
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = f"Test: {log_suffix}"
 
@@ -542,7 +549,12 @@ torchrun --nproc_per_node=2 train.py\
 
 ResNet
 torchrun --nproc_per_node=2 train.py --model resnet50 \
-    --data-path "/media/data/ILSVRC2012" \
-        2>&1 | tee logs/resnet50.txt
+    --data-path "/media/data/ILSVRC2012" --output-dir "/home/hslee/Backbone-Neck-Self-Distillation/ResNet/outputs/resnet50_selfAttn"\
+        2>&1 | tee logs/resnet50_selfAttn.txt
+
+flops
+torchrun --nproc_per_node=1 train.py --model resnet50 \
+    --test-only --data-path "/media/data/ILSVRC2012" \
+        2>&1 | tee logs/resnet50_selfAttn.txt
 
 '''
