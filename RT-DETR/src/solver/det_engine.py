@@ -61,7 +61,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             # 2024.08.01 @hslee KL-Div (forward-backward, forward-backward, update)
             
             optimizer.zero_grad()
-            alpha = 0.5
+            alpha = 0.5 # wneck : weight to alpha, w/o neck : weight to (1 - alpha)
             T = 4.0
              
             wNeck = True
@@ -88,10 +88,14 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss_nb_kd = 0
             loss_bn_kd = 0
             for i in range(len(neck_outs)): # feature map (bs, c, h, w)
-                student = F.log_softmax(backbone_outs[i] / T, dim=1)
+                # N -> B
                 teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
+                student = F.log_softmax(backbone_outs[i] / T, dim=1)
                 loss_nb_kd += kl_div(student, teacher) * (T * T)
-                loss_bn_kd += kl_div(teacher, student) * (T * T)
+                # B -> N
+                teacher = F.softmax(backbone_outs[i] / T, dim=1).clone().detach()
+                student = F.log_softmax(neck_outs[i] / T, dim=1)
+                loss_bn_kd += kl_div(student, teacher) * (T * T)
             loss_nb_kd /= len(neck_outs)
             loss_bn_kd /= len(neck_outs)
             
@@ -112,8 +116,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             # loss_wo_neck = loss_wo_neck + 0.001 *  loss_nb_kd
             # loss_wo_neck.backward()
             
-            # collaborative learning between backbone and neck
-            loss = loss_w_neck + loss_wo_neck + loss_nb_kd + loss_bn_kd
+            # collaborative learning(cl) between backbone and neck
+            loss_cl = loss_nb_kd + loss_bn_kd
+            loss = loss_w_neck + loss_wo_neck + loss_nb_kd + loss_cl
             loss.backward()
             
             optimizer.step()

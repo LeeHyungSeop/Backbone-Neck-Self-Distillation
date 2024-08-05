@@ -57,10 +57,10 @@ class RTDETR(nn.Module):
         
         if wNeck :
             x = neck_outs
-            # skip connection
-            x[0] = x[0] + backbone_outs[0]
-            x[1] = x[1] + backbone_outs[1]
-            x[2] = x[2] + backbone_outs[2]
+            # # 2024.08.05 @hslee : skip connection 
+            # x[0] = x[0] + backbone_outs[0]
+            # x[1] = x[1] + backbone_outs[1]
+            # x[2] = x[2] + backbone_outs[2]
         else : 
             x = backbone_outs
             
