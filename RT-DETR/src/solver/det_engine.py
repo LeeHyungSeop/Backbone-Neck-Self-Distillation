@@ -19,6 +19,32 @@ import torch.nn.functional as F
 from src.data import CocoEvaluator
 from src.misc import (MetricLogger, SmoothedValue, reduce_dict)
 
+def js_divergence(p, q):
+    """
+    Compute the Jensen-Shannon Divergence between two probability distributions.
+    """
+    m = 0.5 * (p + q)
+    return 0.5 * (F.kl_div(p.log(), m, reduction='batchmean') + F.kl_div(q.log(), m, reduction='batchmean'))
+
+def compute_js_distance(tensor1, tensor2):
+    """
+    Compute the Jensen-Shannon distance between two tensors.
+    """
+    # Reshape tensors to 2D
+    tensor1 = tensor1.view(tensor1.size(0), -1)
+    tensor2 = tensor2.view(tensor2.size(0), -1)
+
+    # Convert tensors to probability distributions
+    p = F.softmax(tensor1, dim=1)
+    q = F.softmax(tensor2, dim=1)
+
+    # Compute the JS divergence
+    js_div = js_divergence(p, q)
+
+    # Convert divergence to distance
+    js_distance = torch.sqrt(js_div)
+    return js_distance
+
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
@@ -75,7 +101,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
             # loss_w_neck.backward(retain_graph=True)
             
-            
             wNeck = False
             outputs_wo_neck = model(samples, targets, wNeck=wNeck)
             loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
@@ -83,44 +108,41 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss_wo_neck = (1 - alpha) * loss_wo_neck
             
             
-            ## KL-Div
-            kl_div = nn.KLDivLoss(reduction='batchmean')
-            loss_nb_kd = 0
-            loss_bn_kd = 0
-            for i in range(len(neck_outs)): # feature map (bs, c, h, w)
-                # N -> B
-                teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
-                student = F.log_softmax(backbone_outs[i] / T, dim=1)
-                loss_nb_kd += kl_div(student, teacher) * (T * T)
-                # B -> N
-                teacher = F.softmax(backbone_outs[i] / T, dim=1).clone().detach()
-                student = F.log_softmax(neck_outs[i] / T, dim=1)
-                loss_bn_kd += kl_div(student, teacher) * (T * T)
-            loss_nb_kd /= len(neck_outs)
-            loss_bn_kd /= len(neck_outs)
-            
+            # ## KL-Div
             # kl_div = nn.KLDivLoss(reduction='batchmean')
             # loss_nb_kd = 0
+            # loss_bn_kd = 0
             # for i in range(len(neck_outs)): # feature map (bs, c, h, w)
-            #     student = F.log_softmax(backbone_outs[i] / T, dim=1)
+            #     # N -> B
             #     teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
-                
-            #     # average pooling
-            #     student = F.adaptive_avg_pool2d(student, (1, 1)).squeeze() # (bs, c)
-            #     teacher = F.adaptive_avg_pool2d(teacher, (1, 1)).squeeze() # (bs, c)
-                
+            #     student = F.log_softmax(backbone_outs[i] / T, dim=1)
             #     loss_nb_kd += kl_div(student, teacher) * (T * T)
+            #     # B -> N
+            #     teacher = F.softmax(backbone_outs[i] / T, dim=1).clone().detach()
+            #     student = F.log_softmax(neck_outs[i] / T, dim=1)
+            #     loss_bn_kd += kl_div(student, teacher) * (T * T)
             # loss_nb_kd /= len(neck_outs)
-                
+            # loss_bn_kd /= len(neck_outs)
             
-            # loss_wo_neck = loss_wo_neck + 0.001 *  loss_nb_kd
-            # loss_wo_neck.backward()
             
-            # collaborative learning(cl) between backbone and neck
-            loss_cl = loss_nb_kd + loss_bn_kd
-            loss = loss_w_neck + loss_wo_neck + loss_nb_kd + loss_cl
+            # # collaborative learning(cl) between backbone and neck
+            # loss_cl = loss_nb_kd + loss_bn_kd
+            # loss = loss_w_neck + loss_wo_neck + loss_cl
+            
+            
+            # JS-Div
+            loss_js = 0
+            # the total number of feature map elements
+            N = 0
+            for i in range(len(neck_outs)):
+                # feature map (4, c, h, w)
+                N += neck_outs[i].shape[1] * neck_outs[i].shape[2] * neck_outs[i].shape[3]
+                # N -> B
+                loss_js += compute_js_distance(backbone_outs[i], neck_outs[i])
+            loss_js /= len(neck_outs)
+            
+            loss = loss_w_neck + loss_wo_neck + loss_js
             loss.backward()
-            
             optimizer.step()
             
             if max_norm > 0:
@@ -136,8 +158,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         
         loss_value_w_neck = sum(loss_dict_w_neck_reduced.values())
         loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
-        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_nb_kd + loss_bn_kd
+        # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + (loss_nb_kd + loss_bn_kd)
         # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck
+        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_js
 
         if not math.isfinite(loss_value_w_neck):
             print("Loss is {}, stopping training".format(loss_value_w_neck))
@@ -151,8 +174,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         
         metric_logger.update(loss=loss_value)
         # 2024.08.03 @hslee No KD Loss
-        metric_logger.update(nb_kd=loss_nb_kd)
-        metric_logger.update(bn_kd=loss_bn_kd)
+        # metric_logger.update(nb_kd=loss_nb_kd)
+        # metric_logger.update(bn_kd=loss_bn_kd)
+        metric_logger.update(js_div=loss_js)
         metric_logger.update(loss_w_neck=loss_value_w_neck, **loss_dict_w_neck_reduced)
         metric_logger.update(loss_wo_neck=loss_value_wo_neck, **loss_dict_wo_neck_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
