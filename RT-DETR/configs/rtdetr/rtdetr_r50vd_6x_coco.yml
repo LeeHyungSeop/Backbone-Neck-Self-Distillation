@@ -6,4 +6,4 @@ __include__: [
   './include/rtdetr_r50vd.yml',
 ]
 
-output_dir: ./output/NB_JSDiv
+output_dir: ./output/NB_JSDiv_alpha07
