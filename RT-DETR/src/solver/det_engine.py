@@ -110,27 +110,21 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
             
             # ## KL-Div
+            num_scales = len(neck_outs)
             kl_div = nn.KLDivLoss(reduction='batchmean')
             loss_nb_kd = 0
             # loss_bn_kd = 0
-            
-            for i in range(len(neck_outs)): # feature map (bs, c, h, w)
-                # N -> B
-                teacher = F.softmax(neck_outs[i] / T, dim=1).clone().detach()
-                student = F.log_softmax(backbone_outs[i] / T, dim=1)
+            for i in range(num_scales):
+                # make [bs, c, h, w] -> [bs, c*h*w] -> make probability distribution by softmax
+                student = backbone_outs[i].view(-1, backbone_outs[i].shape[1] * backbone_outs[i].shape[2] * backbone_outs[i].shape[3])
+                student = F.log_softmax(student / T, dim=1)
+                teacher = neck_outs[i].view(-1, neck_outs[i].shape[1] * neck_outs[i].shape[2] * neck_outs[i].shape[3])
+                teacher = F.softmax(teacher / T, dim=1).clone().detach()
+                # N -> B KL-Div
                 loss_nb_kd += kl_div(student, teacher) * (T * T)
-                
-                # # another exp : B -> N
-                # teacher = F.softmax(backbone_outs[i] / T, dim=1).clone().detach()
-                # student = F.log_softmax(neck_outs[i] / T, dim=1)
-                # loss_bn_kd += kl_div(student, teacher) * (T * T)
+            loss_nb_kd /= num_scales
                 
             loss_nb_kd /= len(neck_outs)
-            # loss_bn_kd /= len(neck_outs)
-            
-            # # collaborative learning(cl) between backbone and neck
-            # loss_cl = loss_nb_kd + loss_bn_kd
-            # loss = loss_w_neck + loss_wo_neck + loss_cl
             
             
             # # JS-Div
