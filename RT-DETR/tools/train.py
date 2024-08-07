@@ -76,7 +76,8 @@ python tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
 
 # test on single-gpu
 export CUDA_VISIBLE_DEVICES=0
-python tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml --test-only --resume "/home/hslee/Desktop/ADN_BackoneHint/RT-DETR/Hint/output/hint_r50vd_6x_coco_test/best.pth" \
+python tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
+--test-only --resume "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RT-DETR/output/rtdetr_r50vd_6x_coco_original/PResNet_68epoch.pth" \
     2>&1 | tee ./logs/test.txt
 
 

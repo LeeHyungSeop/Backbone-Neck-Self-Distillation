@@ -28,7 +28,57 @@ import requests
 import torchvision.transforms as transforms
 from PIL import Image
 
+
 COLORS = np.random.uniform(0, 255, size=(80, 3))
+
+def parse_detections(results):
+    detections = results.pandas().xyxy[0]
+    detections = detections.to_dict()
+    boxes, colors, names = [], [], []
+
+    for i in range(len(detections["xmin"])):
+        confidence = detections["confidence"][i]
+        if confidence < 0.2:
+            continue
+        xmin = int(detections["xmin"][i])
+        ymin = int(detections["ymin"][i])
+        xmax = int(detections["xmax"][i])
+        ymax = int(detections["ymax"][i])
+        name = detections["name"][i]
+        category = int(detections["class"][i])
+        color = COLORS[category]
+
+        boxes.append((xmin, ymin, xmax, ymax))
+        colors.append(color)
+        names.append(name)
+    return boxes, colors, names
+
+
+def draw_detections(boxes, colors, names, img):
+    for box, color, name in zip(boxes, colors, names):
+        xmin, ymin, xmax, ymax = box
+        cv2.rectangle(
+            img,
+            (xmin, ymin),
+            (xmax, ymax),
+            color, 
+            2)
+
+        cv2.putText(img, name, (xmin, ymin - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2,
+                    lineType=cv2.LINE_AA)
+    return img
+
+def renormalize_cam_in_bounding_boxes(boxes, colors, names, image_float_np, grayscale_cam):
+    """Normalize the CAM to be in the range [0, 1] 
+    inside every bounding boxes, and zero outside of the bounding boxes. """
+    renormalized_cam = np.zeros(grayscale_cam.shape, dtype=np.float32)
+    for x1, y1, x2, y2 in boxes:
+        renormalized_cam[y1:y2, x1:x2] = scale_cam_image(grayscale_cam[y1:y2, x1:x2].copy())    
+    renormalized_cam = scale_cam_image(renormalized_cam)
+    eigencam_image_renormalized = show_cam_on_image(image_float_np, renormalized_cam, use_rgb=True)
+    image_with_bounding_boxes = draw_detections(boxes, colors, names, eigencam_image_renormalized)
+    return image_with_bounding_boxes
 
 class DetSolver(BaseSolver):
     
@@ -135,25 +185,49 @@ class DetSolver(BaseSolver):
         #     dist.save_on_master(coco_evaluator.coco_eval["bbox"].eval, self.output_dir / "eval.pth")
         # ------------------------------------------------------------------------------
             
-        # coco eval data visualization & save current directory using cv2
-        from torchvision.models import resnet50
-
-        model = resnet50(pretrained=True)
-        image_url = "https://farm1.staticflickr.com/6/9606553_ccc7518589_z.jpg"
+        image_url =  "https://farm1.staticflickr.com/6/9606553_ccc7518589_z.jpg"
         img = np.array(Image.open(requests.get(image_url, stream=True).raw))
         img = cv2.resize(img, (640, 640))
-        # save image
         cv2.imwrite("input_image.jpg", img)
+        rgb_img = img.copy()
         img = np.float32(img) / 255
         transform = transforms.ToTensor()
         tensor = transform(img).unsqueeze(0)
+        # save input image
             
-        target_layers = ["mo"]
-        cam = GradCAM(model, target_layers)
+        module.eval()
+        module.cpu()
+        # check the attribute of the module
+        # print(module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv)
+        # print(type(module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv))
+        
+        target_layers = [module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.act]
+        
+        cam = EigenCAM(module, target_layers)
         grayscale_cam = cam(tensor)[0, :, :]
-        cam_image = show_cam_on_image(img, grayscale_cam)
+        cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
         Image.fromarray(cam_image)
-        cv2.imwrite("cam_image.jpg", cam_image)
+        cv2.imwrite("cam_s3_act.jpg", cam_image)
+        
+        target_layers = [module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.act]
+        cam = EigenCAM(module, target_layers)
+        grayscale_cam = cam(tensor)[0, :, :]
+        cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
+        Image.fromarray(cam_image)
+        cv2.imwrite("cam_s4_act.jpg", cam_image)
+        
+        target_layers = [module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.act]
+        cam = EigenCAM(module, target_layers)
+        grayscale_cam = cam(tensor)[0, :, :]
+        cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
+        Image.fromarray(cam_image)
+        cv2.imwrite("cam_s5_act.jpg", cam_image)
         
         
         return
+
+'''
+module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.act, \
+            module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.act, \
+            module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.act]
+'''
