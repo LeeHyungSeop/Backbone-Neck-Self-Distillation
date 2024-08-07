@@ -89,7 +89,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             optimizer.zero_grad()
             # 0.5, 0.7, 0.9
             alpha = 0.5 # wneck : weight to alpha, w/o neck : weight to (1 - alpha)
-            T = 4.0
+            T = 1.0
              
             wNeck = True
             outputs_w_neck = model(samples, targets, wNeck=wNeck)
@@ -109,40 +109,31 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
             loss_nb_kd = 0
             num_scales = len(neck_outs)
-            kl_div = nn.KLDivLoss(reduction='batchmean')
+            # kl_div = nn.KLDivLoss(reduction='batchmean')
+            kl_div = nn.KLDivLoss()
             
-            # V2 : exp1 : KL-Div [bs, c*h*w]
+            # for i in range(num_scales):
+            #     student = backbone_outs[i]
+            #     teacher = neck_outs[i].clone().detach()
+            #     loss_nb_kd += kl_div(F.log_softmax(student / T, dim=1), F.softmax(teacher / T, dim=1)) * (T * T)
+            # loss_nb_kd /= num_scales
+            
+            # V1 exp2 : KL-Div [bs, c, h*w]
             for i in range(num_scales):
-                # make [bs, c, h, w] -> [bs, c*h*w] -> make probability distribution by softmax
-                student = backbone_outs[i].reshape(backbone_outs[i].shape[0], -1)
-                student = F.log_softmax(student / T, dim=1)
-                teacher = neck_outs[i].reshape(neck_outs[i].shape[0], -1)
-                teacher = F.softmax(teacher / T, dim=1).clone().detach()
+                student = backbone_outs[i].view(backbone_outs[i].shape[0], backbone_outs[i].shape[1], -1)
+                student = F.log_softmax(student / T, dim=2)
+                teacher = neck_outs[i].view(neck_outs[i].shape[0], neck_outs[i].shape[1], -1)
+                teacher = F.softmax(teacher / T, dim=2).clone().detach()
                 # N -> B KL-Div
                 loss_nb_kd += kl_div(student, teacher) * (T * T)
             loss_nb_kd /= num_scales
             
-            
-            # # exp2 : KL-Div [bs, c, h*w]
+            # # V2 : exp1 : KL-Div [bs, c*h*w]
             # for i in range(num_scales):
-            #     student = backbone_outs[i].view(backbone_outs[i].shape[0], backbone_outs[i].shape[1], -1)
-            #     student = F.log_softmax(student / T, dim=2)
-            #     teacher = neck_outs[i].view(neck_outs[i].shape[0], neck_outs[i].shape[1], -1)
-            #     teacher = F.softmax(teacher / T, dim=2).clone().detach()
-                
-            #     # print(student.sum(dim=2).shape) [4, 256]
-            #     # print(student.sum(dim=2))
-            #     # print(teacher.sum(dim=2).shape) [4, 256]
-            #     # print(teacher.sum(dim=2)) # 
-            #     # N -> B KL-Div
-            #     loss_nb_kd += kl_div(student, teacher) * (T * T)
-            # loss_nb_kd /= num_scales
-            
-            # # exp3 : KL-Div [bs, c, h*w]
-            # for i in range(num_scales):
-            #     student = backbone_outs[i]
-            #     teacher = neck_outs[i]
+            #     # make [bs, c, h, w] -> [bs, c*h*w] -> make probability distribution by softmax
+            #     student = backbone_outs[i].reshape(backbone_outs[i].shape[0], -1)
             #     student = F.log_softmax(student / T, dim=1)
+            #     teacher = neck_outs[i].reshape(neck_outs[i].shape[0], -1)
             #     teacher = F.softmax(teacher / T, dim=1).clone().detach()
             #     # N -> B KL-Div
             #     loss_nb_kd += kl_div(student, teacher) * (T * T)
