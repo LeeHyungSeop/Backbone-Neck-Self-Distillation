@@ -114,9 +114,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             # V2 : exp1 : KL-Div [bs, c*h*w]
             for i in range(num_scales):
                 # make [bs, c, h, w] -> [bs, c*h*w] -> make probability distribution by softmax
-                student = backbone_outs[i].view(-1, backbone_outs[i].shape[1] * backbone_outs[i].shape[2] * backbone_outs[i].shape[3])
+                student = backbone_outs[i].reshape(backbone_outs[i].shape[0], -1)
                 student = F.log_softmax(student / T, dim=1)
-                teacher = neck_outs[i].view(-1, neck_outs[i].shape[1] * neck_outs[i].shape[2] * neck_outs[i].shape[3])
+                teacher = neck_outs[i].reshape(neck_outs[i].shape[0], -1)
                 teacher = F.softmax(teacher / T, dim=1).clone().detach()
                 # N -> B KL-Div
                 loss_nb_kd += kl_div(student, teacher) * (T * T)
