@@ -11,7 +11,7 @@ from torchvision.ops.stochastic_depth import StochasticDepth
 from torchvision.transforms._presets import ImageClassification, InterpolationMode
 
 from torchvision.utils import _log_api_usage_once
-from torchvision.models._api import register_model, Weights, WeightsEnum
+from torchvision.models._api import Weights, WeightsEnum
 from torchvision.models._meta import _IMAGENET_CATEGORIES
 from torchvision.models._utils import _ovewrite_named_param, handle_legacy_interface
 from src.core import register
@@ -504,7 +504,6 @@ class Swin_T_Weights(WeightsEnum):
 
 
 
-@register_model()
 @handle_legacy_interface(weights=("pretrained", Swin_T_Weights.IMAGENET1K_V1))
 def swin_t(*, weights: Optional[Swin_T_Weights] = None, progress: bool = True, **kwargs: Any) -> SwinTransformer:
     """

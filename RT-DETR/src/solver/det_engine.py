@@ -88,7 +88,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
             optimizer.zero_grad()
             # 0.5, 0.7, 0.9
-            alpha = 0.7 # wneck : weight to alpha, w/o neck : weight to (1 - alpha)
+            alpha = 0.5 # wneck : weight to alpha, w/o neck : weight to (1 - alpha)
             T = 1.0
              
             wNeck = True
@@ -98,7 +98,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
             loss_w_neck_dict = criterion(outputs_w_neck, targets)
             loss_w_neck = sum(loss_w_neck_dict.values())
-            loss_w_neck = alpha * loss_w_neck
             
             # loss_w_neck.backward(retain_graph=True)
             
@@ -106,25 +105,28 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             outputs_wo_neck = model(samples, targets, wNeck=wNeck)
             loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
             loss_wo_neck = sum(loss_wo_neck_dict.values())
-            loss_wo_neck = (1 - alpha) * loss_wo_neck
             
             
-            # ## KL-Div
-            num_scales = len(neck_outs)
-            kl_div = nn.KLDivLoss(reduction='batchmean')
             loss_nb_kd = 0
-            # loss_bn_kd = 0
+            num_scales = len(neck_outs)
+            ## KL-Div v1
+            # kl_div = nn.KLDivLoss(reduction='batchmean')
+            # # loss_bn_kd = 0
+            # for i in range(num_scales):
+            #     # make [bs, c, h, w] -> [bs, c*h*w] -> make probability distribution by softmax
+            #     student = backbone_outs[i].view(-1, backbone_outs[i].shape[1] * backbone_outs[i].shape[2] * backbone_outs[i].shape[3])
+            #     student = F.log_softmax(student / T, dim=1)
+            #     teacher = neck_outs[i].view(-1, neck_outs[i].shape[1] * neck_outs[i].shape[2] * neck_outs[i].shape[3])
+            #     teacher = F.softmax(teacher / T, dim=1).clone().detach()
+            #     # N -> B KL-Div
+            #     loss_nb_kd += kl_div(student, teacher) * (T * T)
+            # loss_nb_kd /= num_scales
+                
             for i in range(num_scales):
-                # make [bs, c, h, w] -> [bs, c*h*w] -> make probability distribution by softmax
-                student = backbone_outs[i].view(-1, backbone_outs[i].shape[1] * backbone_outs[i].shape[2] * backbone_outs[i].shape[3])
-                student = F.log_softmax(student / T, dim=1)
-                teacher = neck_outs[i].view(-1, neck_outs[i].shape[1] * neck_outs[i].shape[2] * neck_outs[i].shape[3])
-                teacher = F.softmax(teacher / T, dim=1).clone().detach()
-                # N -> B KL-Div
-                loss_nb_kd += kl_div(student, teacher) * (T * T)
+                loss_nb_kd += F.kl_div(F.log_softmax(backbone_outs[i], dim=1), F.softmax(neck_outs[i], dim=1), reduction='batchmean')
             loss_nb_kd /= num_scales
                 
-            loss_nb_kd /= len(neck_outs)
+            # loss_nb_kd /= len(neck_outs)
             
             
             # # JS-Div
@@ -138,8 +140,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             #     loss_js += compute_js_distance(backbone_outs[i], neck_outs[i])
             # loss_js /= len(neck_outs)
             
-            # loss = loss_w_neck + loss_wo_neck + loss_js
-            loss = loss_w_neck + loss_wo_neck + loss_nb_kd
+            # loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck + loss_js
+            loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck + loss_nb_kd
+            # loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck
             loss.backward()
             optimizer.step()
             
