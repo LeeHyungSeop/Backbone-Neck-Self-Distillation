@@ -70,7 +70,7 @@ torchrun --nproc_per_node=2 tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coc
 # train
 export CUDA_VISIBLE_DEVICES=0
 python tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
-    --test-only --resume "???" \
+    --test-only --resume "/home/hslee/Desktop/Backbone-Neck_Self-Distillation/RT-DETR/output/rtdetr_r50vd_6x_coco_original/PResNet_68epoch.pth" \
     2>&1 | tee ./logs/test.txt
 
 

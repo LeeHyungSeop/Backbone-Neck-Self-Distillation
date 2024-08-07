@@ -15,6 +15,20 @@ from .det_engine import train_one_epoch, evaluate
 
 from fvcore.nn import FlopCountAnalysis, flop_count_table
 
+from pytorch_grad_cam import GradCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XGradCAM, EigenCAM, FullGrad
+from pytorch_grad_cam.utils.image import show_cam_on_image
+import cv2
+import numpy as np
+
+import warnings
+warnings.filterwarnings('ignore')
+warnings.simplefilter('ignore')
+
+import requests
+import torchvision.transforms as transforms
+from PIL import Image
+
+COLORS = np.random.uniform(0, 255, size=(80, 3))
 
 class DetSolver(BaseSolver):
     
@@ -104,24 +118,42 @@ class DetSolver(BaseSolver):
     def val(self, ):
         self.eval()
 
+        # 2024.08.07 @hslee : Visualization of Class Activation Map
+
         base_ds = get_coco_api_from_dataset(self.val_dataloader.dataset)
         
         module = self.ema.module if self.ema else self.model
         
-        
-        # 2024.07.25 @hslee : original model evaluation
-        woNeck = False
-        print(f"(evaluate) woNeck : {woNeck}")
-        test_stats, coco_evaluator = evaluate(module, self.criterion, self.postprocessor,
-                self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck)
+        # ------------------------------------------------------------------------------
+        # # 2024.07.25 @hslee : original model evaluation
+        # wNeck = True
+        # print(f"(evaluate) wNeck : {wNeck}")
+        # test_stats, coco_evaluator = evaluate(module, self.criterion, self.postprocessor,
+        #         self.val_dataloader, base_ds, self.device, self.output_dir, wNeck=wNeck)
                 
-        if self.output_dir: 
-            dist.save_on_master(coco_evaluator.coco_eval["bbox"].eval, self.output_dir / "eval.pth")
+        # if self.output_dir: 
+        #     dist.save_on_master(coco_evaluator.coco_eval["bbox"].eval, self.output_dir / "eval.pth")
+        # ------------------------------------------------------------------------------
             
-        # 2024.07.25 @hslee : without neck model evaluation
-        woNeck = True
-        print(f"(evaluate) woNeck : {woNeck}")
-        test_stats, coco_evaluator = evaluate(module, self.criterion, self.postprocessor,
-                self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck)
+        # coco eval data visualization & save current directory using cv2
+        from torchvision.models import resnet50
+
+        model = resnet50(pretrained=True)
+        image_url = "https://farm1.staticflickr.com/6/9606553_ccc7518589_z.jpg"
+        img = np.array(Image.open(requests.get(image_url, stream=True).raw))
+        img = cv2.resize(img, (640, 640))
+        # save image
+        cv2.imwrite("input_image.jpg", img)
+        img = np.float32(img) / 255
+        transform = transforms.ToTensor()
+        tensor = transform(img).unsqueeze(0)
+            
+        target_layers = ["mo"]
+        cam = GradCAM(model, target_layers)
+        grayscale_cam = cam(tensor)[0, :, :]
+        cam_image = show_cam_on_image(img, grayscale_cam)
+        Image.fromarray(cam_image)
+        cv2.imwrite("cam_image.jpg", cam_image)
+        
         
         return
