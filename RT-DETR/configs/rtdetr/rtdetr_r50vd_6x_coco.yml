@@ -6,4 +6,4 @@ __include__: [
   './include/rtdetr_r50vd.yml',
 ]
 
-output_dir: ./output/original_MSE
+output_dir: ./output/NB_S-D_KLDiv_alpha05_T4_V2
