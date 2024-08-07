@@ -198,36 +198,27 @@ class DetSolver(BaseSolver):
         module.eval()
         module.cpu()
         # check the attribute of the module
+        print(f"module : {module}")
         # print(module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv)
         # print(type(module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv))
         
-        target_layers = [module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.act]
+        # s3 = module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv
+        # s4 = module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.conv
+        # s5 = module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.conv
+        # target_layers = [s3, s4, s5]
         
-        cam = EigenCAM(module, target_layers)
-        grayscale_cam = cam(tensor)[0, :, :]
-        cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
-        Image.fromarray(cam_image)
-        cv2.imwrite("cam_s3_act.jpg", cam_image)
-        
-        target_layers = [module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.act]
-        cam = EigenCAM(module, target_layers)
-        grayscale_cam = cam(tensor)[0, :, :]
-        cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
-        Image.fromarray(cam_image)
-        cv2.imwrite("cam_s4_act.jpg", cam_image)
-        
-        target_layers = [module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.act]
-        cam = EigenCAM(module, target_layers)
-        grayscale_cam = cam(tensor)[0, :, :]
-        cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
-        Image.fromarray(cam_image)
-        cv2.imwrite("cam_s5_act.jpg", cam_image)
+        # for i, layer in enumerate(target_layers):
+        #     cam = EigenCAM(module, [layer])
+        #     grayscale_cam = cam(tensor)[0, :, :]
+        #     cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
+        #     Image.fromarray(cam_image)
+        #     cv2.imwrite(f"cam_s{i+3}_conv.jpg", cam_image)
         
         
         return
 
 '''
-module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.act, \
-            module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.act, \
-            module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.act]
+    module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.act, \
+    module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.act, \
+    module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.act]
 '''
