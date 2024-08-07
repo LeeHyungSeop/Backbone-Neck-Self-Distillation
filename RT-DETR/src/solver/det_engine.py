@@ -101,13 +101,13 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
             # loss_w_neck.backward(retain_graph=True)
             
-            wNeck = False
-            outputs_wo_neck = model(samples, targets, wNeck=wNeck)
-            loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
-            loss_wo_neck = sum(loss_wo_neck_dict.values())
+            # wNeck = False
+            # outputs_wo_neck = model(samples, targets, wNeck=wNeck)
+            # loss_wo_neck_dict = criterion(outputs_wo_neck, targets)
+            # loss_wo_neck = sum(loss_wo_neck_dict.values())
             
             
-            loss_nb_kd = 0
+            # loss_nb_kd = 0
             num_scales = len(neck_outs)
             kl_div = nn.KLDivLoss(reduction='batchmean')
             
@@ -163,8 +163,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             
             # loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck + loss_js
             # loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck + loss_nb_kd
-            loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck + loss_mse
+            # loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck + loss_mse
             # loss = alpha * loss_w_neck + (1-alpha) * loss_wo_neck
+            loss = loss_w_neck + loss_mse
             loss.backward()
             optimizer.step()
             
@@ -177,24 +178,25 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             ema.update(model)
 
         loss_dict_w_neck_reduced = reduce_dict(loss_w_neck_dict)
-        loss_dict_wo_neck_reduced = reduce_dict(loss_wo_neck_dict)
+        # loss_dict_wo_neck_reduced = reduce_dict(loss_wo_neck_dict)
         
         loss_value_w_neck = sum(loss_dict_w_neck_reduced.values())
-        loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
+        # loss_value_wo_neck = sum(loss_dict_wo_neck_reduced.values())
         # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + (loss_nb_kd + loss_bn_kd)
         # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck
         # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_js
         # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_nb_kd
-        loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_mse
+        # loss_value = alpha * loss_value_w_neck + (1 - alpha) * loss_value_wo_neck + loss_mse
+        loss_value = loss_value_w_neck + loss_mse
 
         if not math.isfinite(loss_value_w_neck):
             print("Loss is {}, stopping training".format(loss_value_w_neck))
             print(loss_dict_w_neck_reduced)
             sys.exit(1)
-        if not math.isfinite(loss_value_wo_neck):
-            print("Loss is {}, stopping training".format(loss_value_wo_neck))
-            print(loss_dict_wo_neck_reduced)
-            sys.exit(1)
+        # if not math.isfinite(loss_value_wo_neck):
+        #     print("Loss is {}, stopping training".format(loss_value_wo_neck))
+        #     print(loss_dict_wo_neck_reduced)
+        #     sys.exit(1)
 
         
         metric_logger.update(loss=loss_value)
@@ -204,7 +206,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         # metric_logger.update(bn_kd=loss_bn_kd)
         # metric_logger.update(js_div=loss_js)
         metric_logger.update(loss_w_neck=loss_value_w_neck, **loss_dict_w_neck_reduced)
-        metric_logger.update(loss_wo_neck=loss_value_wo_neck, **loss_dict_wo_neck_reduced)
+        # metric_logger.update(loss_wo_neck=loss_value_wo_neck, **loss_dict_wo_neck_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
     # gather the stats from all processes
