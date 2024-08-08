@@ -97,12 +97,17 @@ class DetSolver(BaseSolver):
         base_ds = get_coco_api_from_dataset(self.val_dataloader.dataset)
         
         module = self.ema.module if self.ema else self.model
+        
+        # flops
+        input = torch.randn(1, 3, 640, 640).to(self.device)
+        flops = FlopCountAnalysis(module, (input, ))
+        flops = flop_count_table(flops)
+        print(flops)
+        
         test_stats, coco_evaluator = evaluate(module, self.criterion, self.postprocessor,
                 self.val_dataloader, base_ds, self.device, self.output_dir)
                 
         if self.output_dir:
             dist.save_on_master(coco_evaluator.coco_eval["bbox"].eval, self.output_dir / "eval.pth")
-            
-        
         
         return

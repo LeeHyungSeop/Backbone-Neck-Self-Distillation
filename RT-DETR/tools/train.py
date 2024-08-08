@@ -56,12 +56,12 @@ pip install -r requirements.txt
 # train on multi-gpu
 export CUDA_VISIBLE_DEVICES=0,1
 torchrun --nproc_per_node=2 tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
-    --test-only \
-    2>&1 | tee ./output/original_swinT/flops.txt
+    2>&1 | tee ./output/original_swinT/train_log.txt
     
 export CUDA_VISIBLE_DEVICES=0
 torchrun --nproc_per_node=1 tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
-    2>&1 | tee ./logs/rtdetr_r50vd_6x_coco_original_woNeck
+    --test-only \
+    2>&1 | tee ./output/original_swinT/flops.txt
     
 export CUDA_VISIBLE_DEVICES=0,1
 torchrun --nproc_per_node=2 tools/train.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
