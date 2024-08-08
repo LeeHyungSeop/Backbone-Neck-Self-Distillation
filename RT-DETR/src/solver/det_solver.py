@@ -36,7 +36,6 @@ class DetSolver(BaseSolver):
             if dist.is_dist_available_and_initialized():
                 self.train_dataloader.sampler.set_epoch(epoch)
             
-            # 2024.07.25 @hslee : original model training (woNeck = False)
             train_stats = train_one_epoch(
                 self.model, self.criterion, self.train_dataloader, self.optimizer, self.device, epoch,
                 args.clip_max_norm, print_freq=args.log_step, ema=self.ema, scaler=self.scaler)
@@ -52,19 +51,10 @@ class DetSolver(BaseSolver):
                     dist.save_on_master(self.state_dict(epoch), checkpoint_path)
 
             module = self.ema.module if self.ema else self.model
-            
-            # 2024.07.25 @hslee : without neck model evaluation
-            wNeck = True
-            print(f"wNeck : {wNeck}")
             test_stats, coco_evaluator = evaluate(
-                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, wNeck=wNeck
+                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir
             )
-            wNeck = False
-            print(f"wNeck : {wNeck}")
-            test_stats, coco_evaluator = evaluate(
-                module, self.criterion, self.postprocessor, self.val_dataloader, base_ds, self.device, self.output_dir, wNeck=wNeck
-            )
-            
+
             # TODO 
             for k in test_stats.keys():
                 if k in best_stat:
@@ -95,7 +85,7 @@ class DetSolver(BaseSolver):
                         for name in filenames:
                             torch.save(coco_evaluator.coco_eval["bbox"].eval,
                                     self.output_dir / "eval" / name)
-            
+
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         print('Training time {}'.format(total_time_str))
@@ -107,21 +97,12 @@ class DetSolver(BaseSolver):
         base_ds = get_coco_api_from_dataset(self.val_dataloader.dataset)
         
         module = self.ema.module if self.ema else self.model
-        
-        
-        # 2024.07.25 @hslee : original model evaluation
-        woNeck = False
-        print(f"(evaluate) woNeck : {woNeck}")
         test_stats, coco_evaluator = evaluate(module, self.criterion, self.postprocessor,
-                self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck)
+                self.val_dataloader, base_ds, self.device, self.output_dir)
                 
-        if self.output_dir: 
+        if self.output_dir:
             dist.save_on_master(coco_evaluator.coco_eval["bbox"].eval, self.output_dir / "eval.pth")
             
-        # 2024.07.25 @hslee : without neck model evaluation
-        woNeck = True
-        print(f"(evaluate) woNeck : {woNeck}")
-        test_stats, coco_evaluator = evaluate(module, self.criterion, self.postprocessor,
-                self.val_dataloader, base_ds, self.device, self.output_dir, woNeck=woNeck)
+        
         
         return

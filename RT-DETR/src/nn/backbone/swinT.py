@@ -449,12 +449,14 @@ class SwinTransformer(nn.Module):
             # 2024.06.16 @hslee
             del new_state["head.weight"]
             del new_state["head.bias"]
+            del new_state["norm.weight"]
+            del new_state["norm.bias"]
             
             # print all param
             # for k, v in new_state.items():
             #     print(f"key: {k}, value: {v.shape}")
                 
-            self.load_state_dict(new_state, strict=False) # strict=False because of only the absence of bn_skip
+            self.load_state_dict(new_state, strict=True)
             print(f"Load state_dict from {url}")
 
     def forward(self, x):
