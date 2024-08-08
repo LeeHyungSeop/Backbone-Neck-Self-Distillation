@@ -6,20 +6,17 @@ import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
 
-from torchvision.ops.misc import MLP, Permute
-from torchvision.ops.stochastic_depth import StochasticDepth
-from torchvision.transforms._presets import ImageClassification, InterpolationMode
+from .misc import MLP, Permute
+from .stochastic_depth import StochasticDepth
+from .utils import _log_api_usage_once
+from ._api import register_model, Weights, WeightsEnum
+from .common import get_activation, ConvNormLayer, FrozenBatchNorm2d
+from ._utils import _ovewrite_named_param
 
-from torchvision.utils import _log_api_usage_once
-from torchvision.models._api import Weights, WeightsEnum
-from torchvision.models._meta import _IMAGENET_CATEGORIES
-from torchvision.models._utils import _ovewrite_named_param, handle_legacy_interface
 from src.core import register
-from .intermediate import Sequential
 
 __all__ = [
     "SwinTransformer",
-    "Swin_T_Weights",
     "swin_t",
 ]
 
@@ -65,7 +62,9 @@ class PatchMerging(nn.Module):
         self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
         self.norm = norm_layer(4 * dim)
 
-    def forward(self, x: Tensor):
+        self.norm_skip = norm_layer(4 * dim)  # wchkang
+
+    def forward(self, x: Tensor, skip = False):
         """
         Args:
             x (Tensor): input tensor with expected layout of [..., H, W, C]
@@ -73,7 +72,11 @@ class PatchMerging(nn.Module):
             Tensor with layout of [..., H/2, W/2, 2*C]
         """
         x = _patch_merging_pad(x)
-        x = self.norm(x)
+        if skip == True:        # wchkang
+            x = self.norm_skip(x)
+        else:
+            x = self.norm(x)
+
         x = self.reduction(x)  # ... H/2 W/2 2*C
         return x
 
@@ -91,8 +94,7 @@ def shifted_window_attention(
     qkv_bias: Optional[Tensor] = None,
     proj_bias: Optional[Tensor] = None,
     logit_scale: Optional[torch.Tensor] = None,
-    training: bool = True,
-) -> Tensor:
+):
     """
     Window based multi-head self attention (W-MSA) module with relative position bias.
     It supports both of shifted and non-shifted window.
@@ -109,7 +111,6 @@ def shifted_window_attention(
         qkv_bias (Tensor[out_dim], optional): The bias tensor of query, key, value. Default: None.
         proj_bias (Tensor[out_dim], optional): The bias tensor of projection. Default: None.
         logit_scale (Tensor[out_dim], optional): Logit scale of cosine attention for Swin Transformer V2. Default: None.
-        training (bool, optional): Training flag used by the dropout parameters. Default: True.
     Returns:
         Tensor[N, H, W, C]: The output tensor after shifted window attention.
     """
@@ -174,11 +175,11 @@ def shifted_window_attention(
         attn = attn.view(-1, num_heads, x.size(1), x.size(1))
 
     attn = F.softmax(attn, dim=-1)
-    attn = F.dropout(attn, p=attention_dropout, training=training)
+    attn = F.dropout(attn, p=attention_dropout)
 
     x = attn.matmul(v).transpose(1, 2).reshape(x.size(0), x.size(1), C)
     x = F.linear(x, proj_weight, proj_bias)
-    x = F.dropout(x, p=dropout, training=training)
+    x = F.dropout(x, p=dropout)
 
     # reverse windows
     x = x.view(B, pad_H // window_size[0], pad_W // window_size[1], window_size[0], window_size[1], C)
@@ -253,7 +254,7 @@ class ShiftedWindowAttention(nn.Module):
             self.relative_position_bias_table, self.relative_position_index, self.window_size  # type: ignore[arg-type]
         )
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor):
         """
         Args:
             x (Tensor): Tensor with layout of [B, H, W, C]
@@ -273,7 +274,6 @@ class ShiftedWindowAttention(nn.Module):
             dropout=self.dropout,
             qkv_bias=self.qkv.bias,
             proj_bias=self.proj.bias,
-            training=self.training,
         )
 
 
@@ -305,9 +305,12 @@ class SwinTransformerBlock(nn.Module):
         stochastic_depth_prob: float = 0.0,
         norm_layer: Callable[..., nn.Module] = nn.LayerNorm,
         attn_layer: Callable[..., nn.Module] = ShiftedWindowAttention,
+        skippable=False,  # @wooochul: is this block skippable? 
     ):
         super().__init__()
         _log_api_usage_once(self)
+
+        self.skippable = skippable 
 
         self.norm1 = norm_layer(dim)
         self.attn = attn_layer(
@@ -327,18 +330,83 @@ class SwinTransformerBlock(nn.Module):
                 nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None:
                     nn.init.normal_(m.bias, std=1e-6)
+        
+        if self.skippable == False:   # Skip-aware norm. for shared layers. @woochul
+            self.norm1_skip = norm_layer(dim)
+            self.norm2_skip = norm_layer(dim)  
 
-    def forward(self, x: Tensor):
-        x = x + self.stochastic_depth(self.attn(self.norm1(x)))
-        x = x + self.stochastic_depth(self.mlp(self.norm2(x)))
+    def forward(self, x: Tensor, skip = False):  
+        if self.skippable == False and skip == True:
+            # No stochastic depths for base-net. @woochul
+            x = x + self.attn(self.norm1_skip(x))
+            x = x + self.mlp(self.norm2_skip(x))
+            # print(f"\t\t\t mandoatory path : {x.shape}")
+        else:
+            x = x + self.stochastic_depth(self.attn(self.norm1(x)))
+            x = x + self.stochastic_depth(self.mlp(self.norm2(x)))
+            # print(f"\t\t\t skippable path : {x.shape}")
+
         return x
 
+
+
+class SkippableSequentialBlocks(nn.Sequential):
+    """Skips some blocks in the stage"""
+
+    def forward(self, input, skip = False):
+        """Extends nn.Sequential's forward for skipping some blocks
+        Args:
+            x (Tensor): input tensor
+            skip (bool): if True, skip the last half blocks in the stage.
+        """
+
+        # print(f"\t len(self): {len(self)}")
+        
+        for idx, i in enumerate(range(len(self))):
+            # print(f"\t\t idx: {idx}")
+            if self[i].skippable == True and skip == True:
+                # print(f"--skip {type(self[i])}")
+                pass
+            else:
+                # print(f"--execute {type(self[i])}")
+                input = self[i](input, skip)
+        return input
+
+class SkippableSequentialStages(nn.Sequential):
+    """Pass 'skip' flag to selected stages"""
+
+    def __init__(self, num_stages, num_patch_merginig, *args):
+        super().__init__(*args)
+        self.num_stages = num_stages 
+        self.num_patch_merging = num_patch_merginig
+
+    def forward(self, input, skip = None):
+        """Extened forward to set "skip" flag for the selected stages.
+        Args:
+            input (Tensor): input tensor
+            skip (List[bool]): list of stages to skip its half blocks
+        """
+        
+        assert len(skip) == self.num_stages, \
+            f"The networks has {self.num_stages} skippable stages, got: {len(skip)}"
+        
+        outs = []
+        # print(f"len(self): {len(self)}") # 7
+        for i in range(len(self)):
+            # print(f"(i={i}) skip {skip[(i + 1) // 2]} {type(self[i])}")
+            
+            # self[i] : SkippableSequentialBlocks
+            input = self[i](input, skip[(i + 1) // 2])
+            if i != 0 and type(self[i]) == SkippableSequentialBlocks:
+                outs.append(input)
+            
+        return outs
 
 @register
 class SwinTransformer(nn.Module):
     """
     Implements Swin Transformer from the `"Swin Transformer: Hierarchical Vision Transformer using
-    Shifted Windows" <https://arxiv.org/abs/2103.14030>`_ paper.
+    Shifted Windows" <https://arxiv.org/pdf/2103.14030>`_ paper.
     Args:
         patch_size (List[int]): Patch size.
         embed_dim (int): Patch embedding dimension.
@@ -357,24 +425,27 @@ class SwinTransformer(nn.Module):
 
     def __init__(
         self,
-        patch_size: List[int]= [4, 4],
-        embed_dim: int = 96,
         depths: List[int] = [2, 2, 6, 2],
-        num_heads: List[int] = [3, 6, 12, 24],
+        depths_base: List[int] = [1, 1, 3, 1],  
+        num_heads: List[int]= [3, 6, 12, 24],
+        patch_size: List[int] = [4, 4], 
         window_size: List[int] = [7, 7],
+        embed_dim: int = 96,
         mlp_ratio: float = 4.0,
         dropout: float = 0.0,
         attention_dropout: float = 0.0,
-        stochastic_depth_prob: float = 0.2,
+        stochastic_depth_prob: float = 0.1,
         num_classes: int = 1000,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         block: Optional[Callable[..., nn.Module]] = None,
         downsample_layer: Callable[..., nn.Module] = PatchMerging,
-        pretrained: bool = True,
-    ):
+        freeze_at=-1, 
+        pretrained: bool = False):
         super().__init__()
         _log_api_usage_once(self)
         self.num_classes = num_classes
+
+        self.num_skippable_stages = len(depths)
 
         if block is None:
             block = SwinTransformerBlock
@@ -383,25 +454,41 @@ class SwinTransformer(nn.Module):
 
         layers: List[nn.Module] = []
         # split image into non-overlapping patches
-        layers.append(
-            nn.Sequential(
-                nn.Conv2d(
-                    3, embed_dim, kernel_size=(patch_size[0], patch_size[1]), stride=(patch_size[0], patch_size[1])
-                ),
-                Permute([0, 2, 3, 1]),
-                norm_layer(embed_dim),
-            )
+        self.pre =     nn.Sequential( 
+            nn.Conv2d(
+                3, embed_dim, kernel_size=(patch_size[0], patch_size[1]), stride=(patch_size[0], patch_size[1])
+            ),
+            Permute([0, 2, 3, 1]),
+            norm_layer(embed_dim),
         )
 
         total_stage_blocks = sum(depths)
         stage_block_id = 0
+
         # build SwinTransformer blocks
         for i_stage in range(len(depths)):
             stage: List[nn.Module] = []
             dim = embed_dim * 2**i_stage
+
             for i_layer in range(depths[i_stage]):
                 # adjust stochastic depth probability based on the depth of the stage block
                 sd_prob = stochastic_depth_prob * float(stage_block_id) / (total_stage_blocks - 1)
+                
+                # @woochul: exp-sd-01: reverse order -> later blocks are more important in ADN
+                # sd_prob = stochastic_depth_prob * float(total_stage_blocks - 1 - stage_block_id) / (total_stage_blocks - 1)
+
+                # @woochul: exp-sd-02: per stage sd probability
+                # sd_prob = stochastic_depth_prob * float(i_layer) / (depths[i_stage] - 1)
+
+                # @woochul: exp-sd-03: fixed sd probability
+                # sd_prob = stochastic_depth_prob
+                # print(f"sd_prob:{sd_prob}")
+
+                skippable = False
+
+                if i_layer >= depths_base[i_stage]:
+                    skippable = True
+
                 stage.append(
                     block(
                         dim,
@@ -413,31 +500,30 @@ class SwinTransformer(nn.Module):
                         attention_dropout=attention_dropout,
                         stochastic_depth_prob=sd_prob,
                         norm_layer=norm_layer,
+                        skippable = skippable # wchkang
                     )
                 )
                 stage_block_id += 1
-            layers.append(nn.Sequential(*stage))
-            # add patch merging layer
+            layers.append(SkippableSequentialBlocks(*stage))
+            # add patch merging lfayer
             if i_stage < (len(depths) - 1):
                 layers.append(downsample_layer(dim, norm_layer))
-        # 2024.08.08 @hslee 
-        self.features = Sequential(*layers)
+        
+        # print(f"len(depths): {len(depths)}") 4
+        # print(f"*layers: {len(layers)}")    [2, 2, 6, 2]
+        self.features = SkippableSequentialStages(
+            len(depths), len(depths) - 1, *layers)  
 
         num_features = embed_dim * 2 ** (len(depths) - 1)
-        self.permute = Permute([0, 3, 1, 2])  # B H W C -> B C H W
+        self.norm = norm_layer(num_features)
         
-        # self.norm = norm_layer(num_features)
+        self.permute = Permute([0, 3, 1, 2])
         # self.avgpool = nn.AdaptiveAvgPool2d(1)
         # self.flatten = nn.Flatten(1)
         # self.head = nn.Linear(num_features, num_classes)
 
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.trunc_normal_(m.weight, std=0.02)
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
-                    
         if pretrained:
+            
             url = "https://download.pytorch.org/models/swin_t-704ceda3.pth"
             state = torch.hub.load_state_dict_from_url(url, progress=True)
             
@@ -445,7 +531,17 @@ class SwinTransformer(nn.Module):
             new_state = {}
             for k, v in state.items():
                 new_key = k
+                
+                if 'features' in k:
+                    num = int(k.split('.')[1])
+                    if num == 0:
+                        new_key = k.replace(f'features.{num}', 'pre')
+                    else:
+                        new_key = k.replace(f'features.{num}', f'features.{num-1}')
+                
                 new_state[new_key] = v
+                # print(f"key: {new_key}, value: {v.shape}")
+                
             # 2024.06.16 @hslee
             del new_state["head.weight"]
             del new_state["head.bias"]
@@ -456,23 +552,61 @@ class SwinTransformer(nn.Module):
                 
             self.load_state_dict(new_state, strict=False) # strict=False because of only the absence of bn_skip
             print(f"Load state_dict from {url}")
+        
+        if freeze_at >= 0:
+            self._freeze_parameters(self.conv1)
+            for i in range(min(freeze_at, len(depths))):
+                self._freeze_parameters(self.res_layers[i])
 
-    def forward(self, x):
-        outs = self.features(x)
+        def _freeze_parameters(self, m: nn.Module):
+            for p in m.parameters():
+                p.requires_grad = False
+
+
+    def forward(self, x, skip=None):
+        
+        outs = []
+
+        # print(f"\t(raw input) {x.shape}")        
+        
+        x = self.pre(x) # stem
+        # print(f"\t(after pre) {x.shape}")
+        
+        outs = self.features(x, skip=skip)
         for i in range(len(outs)):
             outs[i] = self.permute(outs[i]).contiguous()
-            # print(f"outs[{i}] : {outs[i].shape}")
             ''''
                     outs[0] torch.Size([4, 192, 80, 80])
                     outs[1] torch.Size([4, 384, 40, 40])
                     outs[2] torch.Size([4, 768, 20, 20])
             '''
-        
+            
         # x = self.norm(x)
+        # # print(f"\t(after norm) {x.shape}")
+        
         # x = self.permute(x)
+        # # print(f"\t(after permute) {x.shape}")
+        
         # x = self.avgpool(x)
+        # # print(f"\t(after avgpool) {x.shape}")
+        
         # x = self.flatten(x)
+        # # print(f"\t(after flatten) {x.shape}")
+        
         # x = self.head(x)
+        # print(f"\t(after head) {x.shape}")
+        
+        '''
+            (raw input) torch.Size([8, 3, 224, 224])
+            (after pre) torch.Size([8, 56, 56, 96])
+            (after features) torch.Size([8, 7, 7, 768])
+            (after norm) torch.Size([8, 7, 7, 768])
+            (after permute) torch.Size([8, 768, 7, 7])
+            (after avgpool) torch.Size([8, 768, 1, 1])
+            (after flatten) torch.Size([8, 768])
+            (after head) torch.Size([8, 1000])
+        '''
+        
         return outs
 
 
@@ -480,6 +614,7 @@ def _swin_transformer(
     patch_size: List[int],
     embed_dim: int,
     depths: List[int],
+    depths_base: List[int],  # @wchkang: depths of base_net
     num_heads: List[int],
     window_size: List[int],
     stochastic_depth_prob: float,
@@ -494,6 +629,7 @@ def _swin_transformer(
         patch_size=patch_size,
         embed_dim=embed_dim,
         depths=depths,
+        depths_base=depths_base,
         num_heads=num_heads,
         window_size=window_size,
         stochastic_depth_prob=stochastic_depth_prob,
@@ -501,74 +637,30 @@ def _swin_transformer(
     )
 
     if weights is not None:
-        model.load_state_dict(weights.get_state_dict(progress=progress, check_hash=True))
+        model.load_state_dict(weights.get_state_dict(progress=progress))
 
     return model
 
 
-_COMMON_META = {
-    "categories": _IMAGENET_CATEGORIES,
-}
-
-
-class Swin_T_Weights(WeightsEnum):
-    IMAGENET1K_V1 = Weights(
-        url="https://download.pytorch.org/models/swin_t-704ceda3.pth",
-        transforms=partial(
-            ImageClassification, crop_size=224, resize_size=232, interpolation=InterpolationMode.BICUBIC
-        ),
-        meta={
-            **_COMMON_META,
-            "num_params": 28288354,
-            "min_size": (224, 224),
-            "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer",
-            "_metrics": {
-                "ImageNet-1K": {
-                    "acc@1": 81.474,
-                    "acc@5": 95.776,
-                }
-            },
-            "_ops": 4.491,
-            "_file_size": 108.19,
-            "_docs": """These weights reproduce closely the results of the paper using a similar training recipe.""",
-        },
-    )
-    DEFAULT = IMAGENET1K_V1
-
-
-
-@handle_legacy_interface(weights=("pretrained", Swin_T_Weights.IMAGENET1K_V1))
-def swin_t(*, weights: Optional[Swin_T_Weights] = None, progress: bool = True, **kwargs: Any) -> SwinTransformer:
-    """
-    Constructs a swin_tiny architecture from
-    `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows <https://arxiv.org/abs/2103.14030>`_.
-
-    Args:
-        weights (:class:`~torchvision.models.Swin_T_Weights`, optional): The
-            pretrained weights to use. See
-            :class:`~torchvision.models.Swin_T_Weights` below for
-            more details, and possible values. By default, no pre-trained
-            weights are used.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.swin_transformer.SwinTransformer``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/swin_transformer.py>`_
-            for more details about this class.
-
-    .. autoclass:: torchvision.models.Swin_T_Weights
-        :members:
-    """
-    weights = Swin_T_Weights.verify(weights)
-
+def swin_t(*, weights = None, progress: bool = True, **kwargs: Any) -> SwinTransformer:
     return _swin_transformer(
         patch_size=[4, 4],
         embed_dim=96,
         depths=[2, 2, 6, 2],
+        depths_base=[1, 1, 3, 2], # @woochul: better choice!
+        # depths_base=[1, 1, 4, 2], # @experiment #1: mandatory > skippable
+        # depths_base=[1, 1, 2, 2], # @experiment #2: mandatory < skippable
+        #depths_base=[1, 1, 3, 1], # @woochul: skpping in the last stage has much worse results.
         num_heads=[3, 6, 12, 24],
         window_size=[7, 7],
-        stochastic_depth_prob=0.2,
+        #stochastic_depth_prob=0.2,  # pytorch's default value
+        #stochastic_depth_prob=0.08,  
+        # stochastic_depth_prob=0.09, 
+        stochastic_depth_prob=0.1,  # @ wooochul  #very good!  
+        #stochastic_depth_prob=0.12,  # @ wooochul  
         weights=weights,
         progress=progress,
         **kwargs,
     )
+
+    
