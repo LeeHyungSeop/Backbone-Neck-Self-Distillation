@@ -1,0 +1,11 @@
+Not init distributed mode.
+Load PResNet50 state_dict
+weight_dict: {'loss_vfl': 1, 'loss_bbox': 5, 'loss_giou': 2}
+loading annotations into memory...
+Done (t=0.38s)
+creating index...
+index created!
+resume from /home/hslee/Desktop/Backbone-Neck_Self-Distillation/RT-DETR/output/rtdetr_r50vd_6x_coco_original/PResNet_68epoch.pth
+Loading last_epoch
+Loading model.state_dict
+Loading ema.state_dict

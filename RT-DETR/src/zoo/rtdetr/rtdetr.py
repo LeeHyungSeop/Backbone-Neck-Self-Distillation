@@ -107,7 +107,8 @@ class RTDETR(nn.Module):
         if wNeck :
             x.update({'backbone_outs': backbone_outs, 'neck_outs': neck_outs})
 
-        return x
+        
+        return x['pred_boxes']
     
     def deploy(self, ):
         self.eval()
