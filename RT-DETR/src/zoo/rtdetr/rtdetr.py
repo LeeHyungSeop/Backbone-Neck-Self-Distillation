@@ -24,7 +24,7 @@ class RTDETR(nn.Module):
         self.encoder = encoder
         self.multi_scale = multi_scale
         
-    def forward(self, x, targets=None, wNeck=False):
+    def forward(self, x, targets=None, wNeck=True):
         if self.multi_scale and self.training:
             sz = np.random.choice(self.multi_scale)
             x = F.interpolate(x, size=[sz, sz])

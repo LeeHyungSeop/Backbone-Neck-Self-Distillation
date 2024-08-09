@@ -27,6 +27,7 @@ warnings.simplefilter('ignore')
 import requests
 import torchvision.transforms as transforms
 from PIL import Image
+import matplotlib.pyplot as plt
 
 
 COLORS = np.random.uniform(0, 255, size=(80, 3))
@@ -185,7 +186,7 @@ class DetSolver(BaseSolver):
         #     dist.save_on_master(coco_evaluator.coco_eval["bbox"].eval, self.output_dir / "eval.pth")
         # ------------------------------------------------------------------------------
             
-        image_url =  "https://farm1.staticflickr.com/6/9606553_ccc7518589_z.jpg"
+        image_url =  "http://farm9.staticflickr.com/8246/8647068737_1f58d52a62_z.jpg"
         img = np.array(Image.open(requests.get(image_url, stream=True).raw))
         img = cv2.resize(img, (640, 640))
         cv2.imwrite("input_image.jpg", img)
@@ -197,28 +198,34 @@ class DetSolver(BaseSolver):
             
         module.eval()
         module.cpu()
-        # check the attribute of the module
         print(f"module : {module}")
-        # print(module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv)
-        # print(type(module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv))
         
-        # s3 = module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.conv
-        # s4 = module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.conv
-        # s5 = module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.conv
-        # target_layers = [s3, s4, s5]
+        # backbone intermediate features
         
-        # for i, layer in enumerate(target_layers):
-        #     cam = EigenCAM(module, [layer])
-        #     grayscale_cam = cam(tensor)[0, :, :]
-        #     cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
-        #     Image.fromarray(cam_image)
-        #     cv2.imwrite(f"cam_s{i+3}_conv.jpg", cam_image)
+        s3 = module.backbone.res_layers._modules['1'].blocks._modules['3'].act
+        s4 = module.backbone.res_layers._modules['2'].blocks._modules['5'].act
+        s5 = module.backbone.res_layers._modules['3'].blocks._modules['2'].act
+        print(s3, s4, s5)
+        backbone_target_layers = [s3, s4, s5]
         
+        f3 = module.encoder.pan_blocks._modules['1'].conv3
+        f4 = module.encoder.pan_blocks._modules['0'].conv3
+        f5 = module.encoder.fpn_blocks._modules['0'].conv3
+        print(type(f3), type(f4), type(f5))
+        neck_target_layers = [f3, f4, f5]
+        
+        for i, layer in enumerate(backbone_target_layers):
+            cam = EigenCAM(module, [layer])
+            grayscale_cam = cam(tensor)[0, :, :]
+            cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
+            Image.fromarray(cam_image)
+            cv2.imwrite(f"cam_s{i+3}_act.jpg", cam_image)  
+        
+        for i, layer in enumerate(neck_target_layers):
+            cam = EigenCAM(module, [layer])
+            grayscale_cam = cam(tensor)[0, :, :]
+            cam_image = show_cam_on_image(img, grayscale_cam, use_rgb=True)
+            Image.fromarray(cam_image)
+            cv2.imwrite(f"cam_f{i+3}_act.jpg", cam_image)
         
         return
-
-'''
-    module.backbone.res_layers._modules['1'].blocks._modules['3'].branch2c.act, \
-    module.backbone.res_layers._modules['2'].blocks._modules['5'].branch2c.act, \
-    module.backbone.res_layers._modules['3'].blocks._modules['2'].branch2c.act]
-'''
